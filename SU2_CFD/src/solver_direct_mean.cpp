@@ -6608,10 +6608,15 @@ void CEulerSolver::InterpolateBodyForceParams(CGeometry *geometry, CConfig *conf
 	int n_blade{};
 	int n_points{};
 	int n_rows{};
+	
+	// Opening body-force model input file
 	std::ifstream inputFile((config->GetBFM_inputName()).c_str());
-	//inputFile.open(config->GetBFM_inputName());
 	string line;
+	
+	// Reading number of blade rows, number of radial blade sections and axial points from first line
 	inputFile >> n_rows >> n_blade >> n_points;
+
+	// Defining 3D matrices for data storage
 	su2double xarray[n_rows][n_blade][n_points];
 	su2double rarray[n_rows][n_blade][n_points];
 	su2double Nxarray[n_rows][n_blade][n_points];
@@ -6622,16 +6627,20 @@ void CEulerSolver::InterpolateBodyForceParams(CGeometry *geometry, CConfig *conf
 	su2double axialChord[n_rows][n_blade][n_points];
 	su2double blade_count[n_rows];
 	su2double rotation[n_rows];
+
+	// Defining rotation axis as given in configuration file
 	su2double Omega[3] = {config->GetRotation_Rate_X(iZone), config->GetRotation_Rate_Y(iZone), config->GetRotation_Rate_Z(iZone)};
-	su2double Omega_mag = 0;
-	for(int i=0; i<3; i++){Omega_mag += Omega[i]*Omega[i];}
-	for(int i=0; i<3; i++){Omega[i] /= sqrt(Omega_mag) + 1e-6;}
+	//su2double Omega_mag = 0;
+	//for(int i=0; i<3; i++){Omega_mag += Omega[i]*Omega[i];}
+	//for(int i=0; i<3; i++){Omega[i] /= sqrt(Omega_mag) + 1e-6;}
 
 	su2double ax_dot_x = 0, ax_dot_ax = 0;	
 	su2double axial[nDim] = {0}, radial[nDim]={0};
 	int start_line = 0;
 	int end_line = 0;
 	su2double x_min = 0.0;
+	
+	// Looping through blade rows, radial sections and axial points to store interpolation matrix
 	for (int q=0; q < n_rows; q++){
 		for (int p=0; p < n_blade; p++){
 			
@@ -6642,6 +6651,7 @@ void CEulerSolver::InterpolateBodyForceParams(CGeometry *geometry, CConfig *conf
 			for (int i=start_line; i<=end_line; i++){
 				getline(inputFile, line);
 				if (i >= start_line){
+					// Storing values read on the line
 					inputFile >> xarray[q][p][j] >> rarray[q][p][j] >> Nxarray[q][p][j] >> Ntarray[q][p][j] >> Nrarray[q][p][j] >> barray[q][p][j] >> X_LE[q][p][j] >> axialChord[q][p][j] >> rotation[q] >> blade_count[q];
 					if(xarray[q][p][j] <= x_min){
 						x_min = xarray[q][p][j];
@@ -6656,38 +6666,71 @@ void CEulerSolver::InterpolateBodyForceParams(CGeometry *geometry, CConfig *conf
 	}
 	inputFile.close();
 		
-		
+	// Subtracting 1 meter from minimum axial coordinate to ensure it's located outside of the domain
 	x_min = x_min - 1.0;
+	
+	su2double b=1.0, Nx = 0.0, Nt = 1.0, Nr = 0.0, bfFac = 0.0, x_le = 0.0, rotFac = 0.0, bladeCount = 1, chord = 1.0;
+	su2double BodyForceParams[9] = {bfFac, b, Nx, Nt, Nr, x_le, rotFac, bladeCount, chord};
+	
+	su2double x1, x2, r1, r2;
+	int nInt=0;
+	bool inside = false;
+	su2double dist = 0, deNom=0;
+	su2double eNum_b = 0, eNum_Nx = 0, eNum_Nt = 0, eNum_Nr = 0, eNum_x_le = 0, eNum_chord = 0;
+	// Looping over points in the domain to interpolate body-force parameters onto the respective cells
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
-		su2double *Coord = geometry->node[iPoint]->GetCoord();
-		ax_dot_x = 0;
-		ax_dot_ax = 0;
-		su2double r = 0;
-		su2double ax = 0;
+		su2double *Coord = geometry->node[iPoint]->GetCoord(); // Coordinate vector
+		ax_dot_x = 0;	// dot product between rotation axis and coordinate vector
+		ax_dot_ax = 0;	// dot product of rotation axis
+		su2double r = 0;	// radial coordinate
+		su2double ax = 0;	// axial coordinate
 		if (nDim == 3){
+			// Computing dot products
 			for(int iDim = 0; iDim < nDim; iDim ++){
 				ax_dot_x += Omega[iDim]*Coord[iDim];
 				ax_dot_ax += Omega[iDim]*Omega[iDim];
 			}
 			for(int iDim = 0; iDim < nDim; iDim ++){
-				axial[iDim] = (ax_dot_x/ax_dot_ax)*Omega[iDim];
-				radial[iDim] = Coord[iDim] - axial[iDim];
+				axial[iDim] = (ax_dot_x/ax_dot_ax)*Omega[iDim]; // computing axial coordinate through parallel projection of coordinate vector onto rotation axis
+				radial[iDim] = Coord[iDim] - axial[iDim];	// computing radial vector through normal projection of coordinate vector onto rotation axis
 				ax += axial[iDim]*axial[iDim];
 				r += radial[iDim]*radial[iDim];
 			}
-			ax = sqrt(ax);
-			if(ax_dot_x < 0.0){ax = -ax;}
-			r = sqrt(r);
+			ax = sqrt(ax);	// Computing axial coordinate
+			if(ax_dot_x < 0.0){ax = -ax;}	// In case parallel projection is negative, axial coordinate is flipped
+			r = sqrt(r);	// Computing radial coordinate
 		}else{
 			r = BF_radius;
 			ax = Coord[0];
 		}
-		su2double b=1.0, Nx = 0.0, Nt = 1.0, Nr = 0.0, bfFac = 0.0, x_le = 0.0, rotFac = 0.0, bladeCount = 1, chord = 1.0;
-		su2double BodyForceParams[9] = {bfFac, b, Nx, Nt, Nr, x_le, rotFac, bladeCount, chord};
-		
+		//su2double b=1.0, Nx = 0.0, Nt = 1.0, Nr = 0.0, bfFac = 0.0, x_le = 0.0, rotFac = 0.0, bladeCount = 1, chord = 1.0;
+		//su2double BodyForceParams[9] = {bfFac, b, Nx, Nt, Nr, x_le, rotFac, bladeCount, chord};
+		// Initializing body-force parameters with outside values
+		b = 1.0;
+		Nx = 0.0;
+		Nt = 1.0;
+		Nr = 0.0;
+		bfFac = 0.0;
+		x_le = 0.0;
+		rotFac = 0.0;
+		bladeCount = 1;
+		chord = 1.0;
+		//su2double BodyForceParams[9] = {bfFac, b, Nx, Nt, Nr, x_le, rotFac, bladeCount, chord};
+		BodyForceParams[0] = bfFac;
+		BodyForceParams[1] = b;
+		BodyForceParams[2] = Nx;
+		BodyForceParams[3] = Nt;
+		BodyForceParams[4] = Nr;
+		BodyForceParams[5] = x_le;
+		BodyForceParams[6] = rotFac;
+		BodyForceParams[7] = bladeCount;
+		BodyForceParams[8] = chord;
+
+		// Looping over blade rows
 		for (int q=0; q < n_rows; q++){
 			for(int j=0; j < n_blade - 1; j++){
 				for(int n = 0; n < n_points - 1; n++){
+					// Appending interpolation values to sides loop
 					su2double x_side[5] = {xarray[q][j][n], xarray[q][j+1][n], xarray[q][j+1][n+1], xarray[q][j][n+1], xarray[q][j][n]};
 					su2double r_side[5] = {rarray[q][j][n], rarray[q][j+1][n], rarray[q][j+1][n+1], rarray[q][j][n+1], rarray[q][j][n]};
 					su2double b_side[5] = {barray[q][j][n], barray[q][j+1][n], barray[q][j+1][n+1], barray[q][j][n+1], barray[q][j][n]};
@@ -6697,9 +6740,10 @@ void CEulerSolver::InterpolateBodyForceParams(CGeometry *geometry, CConfig *conf
 					su2double x_le_side[5] = {X_LE[q][j][n], X_LE[q][j+1][n], X_LE[q][j+1][n+1], X_LE[q][j][n+1], X_LE[q][j][n]};
 					su2double chord_side[5] = {axialChord[q][j][n], axialChord[q][j+1][n], axialChord[q][j+1][n+1], axialChord[q][j][n+1], axialChord[q][j][n]};
 					
-					su2double x1, x2, r1, r2;
-					int nInt=0;
-					bool inside = false;
+					
+					nInt = 0; // number of intersections
+					inside = false;	// point is outside of the blade region by default
+					// Looping over sides to count number of intersections
 					for(int p=0; p < 4; p++){
 						x1 = x_side[p];
 						x2 = x_side[p + 1];
@@ -6714,17 +6758,18 @@ void CEulerSolver::InterpolateBodyForceParams(CGeometry *geometry, CConfig *conf
 							S_ray = (1 / det) * ((x1 - x_min) * A[1][1] + (r1 - r) * -A[0][1]);
 							S_side = (1 / det) * (x1 * -A[1][0] + (r1 - r) * A[0][0]);
 							if(S_ray >= 0.0 && S_ray < 1.0 && S_side >= 0.0 && S_side < 1.0){
-								nInt ++;
+								nInt ++; // Adding to boundary intersection count
 							}
 						}
 						
 					}
+					// In case number of intersections is false, the point is considered inside
 					if (nInt % 2 != 0 and nInt > 0){
 						inside = true;
 					}
+					// If the point is inside, the body-force parameters are interpolated through distance-weighted average from the corner points
 					if (inside){
-						su2double dist = 0, deNom=0;
-						su2double eNum_b = 0, eNum_Nx = 0, eNum_Nt = 0, eNum_Nr = 0, eNum_x_le = 0, eNum_chord = 0;
+						dist = 0; deNom=0; eNum_b = 0; eNum_Nx = 0; eNum_Nt = 0; eNum_Nr = 0; eNum_x_le = 0; eNum_chord = 0;
 						for(int p = 0; p < 4; p++){
 							dist = sqrt((ax - x_side[p]) * (ax - x_side[p]) + (r - r_side[p]) * (r - r_side[p]));
 							deNom += 1 / dist;
@@ -6741,13 +6786,11 @@ void CEulerSolver::InterpolateBodyForceParams(CGeometry *geometry, CConfig *conf
 						Nt = eNum_Nt / deNom;
 						Nr = eNum_Nr / deNom;
 						x_le = eNum_x_le / deNom;
-						//x_le = X_LE[q][j][n];
 						rotFac = rotation[q];
 						bladeCount = blade_count[q];
 						chord = eNum_chord / deNom;
-						//chord = axialChord[q][j][n];
 					}
-					
+					// Storing interpolated geometric parameters into vector
 					BodyForceParams[0] = bfFac;
 					BodyForceParams[1] = b;
 					BodyForceParams[2] = Nx;
@@ -6760,12 +6803,10 @@ void CEulerSolver::InterpolateBodyForceParams(CGeometry *geometry, CConfig *conf
 				}
 			}
 		}
-
+		// Storing body-force parameter vector onto node
 		node[iPoint]->SetBodyForceParameters(BodyForceParams);
 		//cout << x << ", "  << r << ", " << BodyForceParams[0] << ", " << BodyForceParams[1] << ", " << BodyForceParams[2] << ", " << BodyForceParams[3] << ", " << BodyForceParams[4] << endl;
 	}
-	//cout << "Calculating blockage gradient field" << endl;
-	//ComputeBlockageGradient(geometry, config);
 }
 
 void CEulerSolver::ComputeBlockageGradient(CGeometry *geometry, CConfig *config) {
@@ -15464,36 +15505,45 @@ void CEulerSolver::ComputeBodyForce_Turbo(CConfig *config, CGeometry *geometry) 
 		
 		// Extracting node coordinates 
         Coord_i = geometry->node[iPoint]->GetCoord();
-	ax_dot_x = 0;
-	ax_dot_ax = 0;
-	radius = 0;
-	ax = 0;
+	// In order to determine the relative velocity components, the local unit vectors in axial
+	// ,radial and tangential direction have to be determined.
+	
+	ax_dot_x = 0;	// dot product between axial unit vector and coordinate vector
+	ax_dot_ax = 0;	// dot product of axial unit vector
+	radius = 0;	// Radial coordinate
+	ax = 0;		// Axial coordinate
 	if (nDim == 3){
+		// Computing axial dot products
 		for(int iDim = 0; iDim < nDim; iDim ++){
 			ax_dot_x += Omega[iDim]*Coord_i[iDim];
 			ax_dot_ax += Omega[iDim]*Omega[iDim];
 		}
+		//
 		for(int iDim = 0; iDim < nDim; iDim ++){
-			axial_vector[iDim] = (ax_dot_x/ax_dot_ax)*Omega[iDim];
-			radial_vector[iDim] = Coord_i[iDim] - axial_vector[iDim];
-			ax += axial_vector[iDim]*axial_vector[iDim];
+			axial_vector[iDim] = (ax_dot_x/ax_dot_ax)*Omega[iDim]; // Parallel projection of coordinate vector onto rotation axis
+			radial_vector[iDim] = Coord_i[iDim] - axial_vector[iDim];	// Orthogonal projection of coordinate vector onto rotation axis
+			ax += axial_vector[iDim]*axial_vector[iDim];	
 			radius += radial_vector[iDim]*radial_vector[iDim];
-			i_ax[iDim] = Omega[iDim];
+			i_ax[iDim] = Omega[iDim];	// Appending axial unit vector component
 		}
-		radius = sqrt(radius);
+		radius = sqrt(radius); // Computing radial coordinate
+		ax = sqrt(ax);	// Compuring axial coordinate
+		if(ax_dot_x < 0.0){ax = -ax;}	// In case the coordinate parallel projection is negative, the axial coordinate is flipped
+
+		// Computing tangential unit vector components through cross product of radial and axial vectors
 		i_theta[0] = (i_ax[1]*radial_vector[2] - i_ax[2]*radial_vector[1])/radius;
 		i_theta[1] = (-i_ax[0]*radial_vector[2] + i_ax[2]*radial_vector[0])/radius;
 		i_theta[2] = (i_ax[0]*radial_vector[1] - i_ax[1]*radial_vector[0])/radius;
 
-		ax = sqrt(ax);
-		if(ax_dot_x < 0.0){ax = -ax;}
-		
-		
+		// Computing radial unit vector through normilization of radial vector
 		for(int iDim = 0; iDim < nDim; iDim ++){i_r[iDim] = radial_vector[iDim]/radius;}
+		
+		// Currently, the method is incompatible with 2D simulations
 		}else{
 		radius = BF_radius;
 		ax = Coord_i[0];
 	}	
+		
 		
 		// Obtaining the absolute velocity magnitudes, depending on case dimension.
 		/*
@@ -15532,20 +15582,40 @@ void CEulerSolver::ComputeBodyForce_Turbo(CConfig *config, CGeometry *geometry) 
 		rotFac = Geometric_Parameters[6];	// Rotation factor. Multiplies the body-force rotation value.
 		BF_blades = Geometric_Parameters[7];				// Blade row blade count
 		
+
 		// Calculating the relative velocity components in cyllindrical coordinates. 
 		//W_ax = V_z;	// Axial relative velocity
 		//W_r = V_y * ST + V_x * CT;	// Radial relative velocity 
 		//W_th = V_y * CT - V_x * ST - rotFac * omegaR * radius;	// Tangential relative velocity
 		
+		// Computing relative velocity components in axial, radial and tangential direction
 		W_ax = 0;
 		W_r = 0;
 		W_th = 0;
+		
+		// Adding to the relative velocity components through dot product of absolute velocity and respective unit vector
 		for(int iDim = 0; iDim < nDim; iDim++){
 			W_ax += i_ax[iDim] * U_i[iDim+1]/U_i[0];
 			W_th += i_theta[iDim] * U_i[iDim+1]/U_i[0];
 			W_r += i_r[iDim] * U_i[iDim+1]/U_i[0];
 		}
+		// Induced velocity due to rotation is subtracted from tangential velocity
 		W_th -= rotFac * omegaR * radius;
+
+		/*
+		V_x = U_i[1] / U_i[0];
+		V_y = U_i[2] / U_i[0];
+		V_z = U_i[3] / U_i[0];
+
+		ax = Coord_i[2];
+		radius = sqrt(Coord_i[0]*Coord_i[0] + Coord_i[1]*Coord_i[1]);
+		CT = Coord_i[0] / radius;
+		ST = Coord_i[1] / radius;
+
+		W_ax = V_z;
+		W_r = CT * V_x + ST * V_y;
+		W_th = CT * V_y - ST * V_x - rotFac * omegaR * radius;
+		*/
 
 		WdotN = W_ax * Nx + W_r * Nr + W_th * Nt;		// Dot product of relative velocity and camber normal vector
 		W_nx = WdotN * Nx, W_nr = WdotN * Nr, W_nth = WdotN * Nt;		// Relative velocity components normal to the blade
@@ -15562,7 +15632,6 @@ void CEulerSolver::ComputeBodyForce_Turbo(CConfig *config, CGeometry *geometry) 
 		
 		// Blade pitch 
 		su2double pitch = 2 * pi * radius / BF_blades;
-		// pitch = 0.05;
 		
 		// Starting the process of calculating the actual body-force magnitudes
 		
@@ -15579,9 +15648,8 @@ void CEulerSolver::ComputeBodyForce_Turbo(CConfig *config, CGeometry *geometry) 
 			Re_x = (0.001 * W * U_i[0]) / mu;
 		}
 		C_f = 0.0592 * pow(Re_x, -0.2) ;
-		// C_f = 0.112 * pow(Re_x, -0.2) ;
+
 		// Calculating the normal force compressibility factor
-		
 		if (M_rel < 1) {
             Kprime = 1 / (sqrt(1 - (M_rel * M_rel)));
             if (Kprime <= 3) {
@@ -15600,40 +15668,22 @@ void CEulerSolver::ComputeBodyForce_Turbo(CConfig *config, CGeometry *geometry) 
                 K = 3;
             }
         }
-		// K = 1.0;
+		
 		
 		// Calculating the final values for the normal and parallel force
 		F_n = -bfFac * K * F_n_inc;
 		F_p = -bfFac * C_f * W * W * (1 / pitch) * (1 / abs(Nt)) * (1 / b);
 		
-		//su2double **primvarGrad = node[iPoint]->GetGradient_Primitive();
-		//su2double *PGrad = primvarGrad[4];
 		
 		// Transforming the normal and parallel force components to cyllindrical coordinates
 		
 		F_ax = F_n * (cos(delta) * Nx - sin(delta) * (W_px / W_p)) + F_p * W_ax / W;
 		F_r = F_n * (cos(delta) * Nr - sin(delta) * (W_pr / W_p)) + F_p * W_r / W;
 		F_th = F_n * (cos(delta) * Nt - sin(delta) * (W_pth / W_p)) + F_p * W_th / W;
+		e_source = rotFac * omegaR * radius * F_th;
 		
-		/*
-		su2double r_rot[3] = {Nt*W_r - Nr * W_th, Nr*W_x - Nx*W_r, Nx*W_th - Nt*W_x};
-		r_rot = (1 / (W + 1e-6))*r_rot;
-		su2double r = r_rot;
-		r = r * (1 / pow((r_rot[0]*r_rot[0] + r_rot[1]*r_rot[1] + r_rot[2]*r_rot[2] + 1e-6), 0.5));
-		su2double A[3][3] = {{r[0]*r[0], r[0]*r[1] + r[2], r[0]*r[2] - r[1]}, {r[1]*r[0] - r[2], r[1]*r[1], r[1]*r[2] + r[0]}, {r[2]*r[0] + r[1], r[2]*r[1] - r[0], r[2]*r[2]}};
-		su2double i_n[3] = (1/(W + 1e-6))*{A[0][0]*W_x + W_th * A[0][1] + W_r * A[0][2], W_x * A[1][0] + W_th * A[1][1] + W_r * A[1][2], W_x*A[2][0] + W_th * A[2][1] + W_r * A[2][2]};
-		
-		su2double i_nx{}, i_nt{}, i_nr{};
-		i_nx = i_n[0];//(1/(W*W + 1e-6))*(Nx*W_th * W_th - Nt*W_x * W_th - Nr*W_x*W_r + Nx*W_r*W_r);
-		i_nt = i_n[1];//(1/(W*W + 1e-6))*(Nt*W_x * W_x - Nx*W_th * W_x - Nr*W_th*W_r + Nt*W_r*W_r);
-		i_nr = i_n[2];//(1/(W*W + 1e-6))*(Nr*W_th * W_th - Nx*W_r * W_x - Nt*W_r*W_th + Nr*W_x*W_x);
-		
-		F_x = F_n*i_nx + F_p * (W_x / (W + 1e-6));
-		F_th = F_n*i_nt + F_p * (W_th / (W + 1e-6));
-		F_r = F_n*i_nr + F_p * (W_r / (W + 1e-6));
-		*/
-		/*
 		// Transforming cyllindrical force components to cartesian coordinates
+		/*
 		F_y = F_r * ST + F_th * CT;
 		F_x = F_r * CT - F_th * ST;
 		F_z = F_ax;
@@ -15650,31 +15700,25 @@ void CEulerSolver::ComputeBodyForce_Turbo(CConfig *config, CGeometry *geometry) 
 			F[2] = U_i[0] * F_z;
 		}
 		*/
-		e_source = rotFac * omegaR * radius * F_th;
-		for(int iDim=0; iDim<nDim; iDim++){
-			F[iDim] = F_ax*i_ax[iDim] + F_th*i_theta[iDim] + F_r*i_r[iDim];
-		}
-
-		BF_res[0] = 0.0;
 		
+		// Appending Cartesial body-forces to body-force vector
+		for(int iDim=0; iDim<nDim; iDim++){
+			F[iDim] = U_i[0] * (F_ax*i_ax[iDim] + F_th*i_theta[iDim] + F_r*i_r[iDim]);
+		}
+		
+		// Appending source term values to the body-force source term vector
+		BF_res[0] = 0.0;	// empty density component
+		// Appending momentum source terms
 		for(int iDim = 0; iDim < nDim; iDim ++) {
             BF_res[iDim + 1] = F[iDim];
         }
-        
+        	// Appending energy source term
 		BF_res[nDim+1] = U_i[0] * e_source;
+		
+		// Storing body-force vector onto the node
 		node[iPoint]->SetBodyForceVector_Turbo(BF_res);
-		/*
-		su2double BGradient[nDim] = {0.0};
-		for(int iDim=0; iDim < nDim; iDim++){
-			BGradient[iDim] = node[iPoint]->GetGradient_Blockage(iDim);
-			//BGradient[iDim] = 0.0;
-		}
 		
-		cout << x_coord  << ", " << radius << ", " << bfFac<< ", "  << rotFac << ", " << b << ", " << BGradient[0] << ", " << BGradient[1] << ", " << BGradient[2] << ", " << Nx<< ", " << Nt  << ", " << Nr << endl;
-		*/
-		// Storing body-force vector on the current node
-//		cout<<"Direct Body Force :: "<<node[iPoint]->GetBodyForceVector_Turbo()[2]<<"\n";
-		
+		// Storing body-force source term vector onto the node
 		node[iPoint]->SetBody_Force_Source(BF_res);
     }
 
