@@ -544,7 +544,8 @@ enum ENUM_FLUIDMODEL {
   INC_IDEAL_GAS = 5,      /*!< \brief Incompressible ideal gas model. */
   INC_IDEAL_GAS_POLY = 6,  /*!< \brief Inc. ideal gas, polynomial gas model. */
   MUTATIONPP = 7,         /*!< \brief Mutation++ gas model for nonequilibrium flow. */
-  USER_DEFINED_NONEQ = 8        /*!< \brief User defined gas model for nonequilibrium flow. */
+  USER_DEFINED_NONEQ = 8,       /*!< \brief User defined gas model for nonequilibrium flow. */
+  TABLE_FLUID = 9         /*!< \brief Table interpolation fluid model. */
 };
 static const MapType<string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
@@ -556,6 +557,7 @@ static const MapType<string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("INC_IDEAL_GAS_POLY", INC_IDEAL_GAS_POLY)
   MakePair("MUTATIONPP", MUTATIONPP)
   MakePair("USER_DEFINED_NONEQ", USER_DEFINED_NONEQ)
+  MakePair("TABLE_FLUID", TABLE_FLUID)
 };
 
 /*!
