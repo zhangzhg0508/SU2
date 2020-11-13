@@ -67,6 +67,12 @@ if get_option('buildtype')!='debug'
   su2_cpp_args += '-DNDEBUG'
 endif
 
+if get_option('enable-mpp')
+  subdir('externals/Mutationpp')
+  su2_deps     += mpp_dep
+  su2_cpp_args += '-DHAVE_MPP'
+endif
+
 # check for mixed precision floating point arithmetic
 if get_option('enable-mixedprec')
   su2_cpp_args += '-DUSE_MIXED_PRECISION'
@@ -177,8 +183,8 @@ subdir('SU2_DEF/src')
 subdir('SU2_GEO/src')
 # compile SU2_SOL executable
 subdir('SU2_SOL/src')
-# compile SU2_INTERP executable
-subdir('SU2_INTERP/src')
+## compile SU2_INTERP executable
+#subdir('SU2_INTERP/src')
 # install python scripts
 subdir('SU2_PY')
 # unit tests

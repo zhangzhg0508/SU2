@@ -111,9 +111,9 @@ AC_ARG_ENABLE(SOL,
 AC_ARG_ENABLE(GEO,
     AS_HELP_STRING([--disable-GEO], [build the SU2_GEO executable (default = yes)]),
   [build_GEO=$enableval], [build_GEO="yes"])
-AC_ARG_ENABLE(INTERP,
-    AS_HELP_STRING([--disable-INTERP], [build the SU2_INTERP executable (default = yes)]),
-  [build_INTERP=$enableval], [build_INTERP="yes"])
+#AC_ARG_ENABLE(INTERP,
+#    AS_HELP_STRING([--disable-INTERP], [build the SU2_INTERP executable (default = yes)]),
+#  [build_INTERP=$enableval], [build_INTERP="yes"])
 AC_ARG_ENABLE(PY_WRAPPER,
     AS_HELP_STRING([--enable-PY_WRAPPER], [wrap the SU2 code with Python (default = no)]),
   [build_PY_WRAPPER="yes"], [build_PY_WRAPPER="no"])

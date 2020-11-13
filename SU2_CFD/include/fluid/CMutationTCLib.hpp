@@ -28,7 +28,9 @@
 #pragma once
 
 #include "CNEMOGas.hpp"
+#ifdef HAVE_MPP
 #include "mutation++.h"
+
 
 /*!
  * \derived class CMutationTCLib
@@ -140,3 +142,5 @@ public:
   vector<su2double>& GetSpeciesFormationEnthalpy() final;
 
 };
+
+#endif
