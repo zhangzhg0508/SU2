@@ -68,7 +68,7 @@ if get_option('buildtype')!='debug'
 endif
 
 if get_option('enable-mpp')
-  subdir('externals/Mutationpp')
+  subdir('externals/Mutationpp-meson')
   su2_deps     += mpp_dep
   su2_cpp_args += '-DHAVE_MPP'
 endif
