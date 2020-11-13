@@ -81,7 +81,17 @@ mpp_src = ['../Mutationpp/src/fortran/cwrapper.cpp',
            '../Mutationpp/src/utilities/Units.cpp',
            '../Mutationpp/src/utilities/XMLite.cpp']
 
-mpp_include = include_directories(['../Mutationpp/thirdparty/eigen', '../Mutationpp/src'])
+mpp_include = include_directories(['../Mutationpp/thirdparty/eigen',
+                                   '../Mutationpp/src',
+                                   '../Mutationpp/src/general',
+                                   '../Mutationpp/src/thermo',
+                                   '../Mutationpp/src/kinetics',
+                                   '../Mutationpp/src/transfer',
+                                   '../Mutationpp/src/transport',
+                                   '../Mutationpp/src/utilities',
+                                   '../Mutationpp/src/fortran',
+                                   '../Mutationpp/src/gsi',
+                                   '../Mutationpp/src/numerics'])
 mpp_lib     = static_library('mpp', 
                                mpp_src,
 			       include_directories : mpp_include,

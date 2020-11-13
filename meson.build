@@ -67,12 +67,6 @@ if get_option('buildtype')!='debug'
   su2_cpp_args += '-DNDEBUG'
 endif
 
-if get_option('enable-mpp')
-  subdir('externals/Mutationpp-meson')
-  su2_deps     += mpp_dep
-  su2_cpp_args += '-DHAVE_MPP'
-endif
-
 # check for mixed precision floating point arithmetic
 if get_option('enable-mixedprec')
   su2_cpp_args += '-DUSE_MIXED_PRECISION'
@@ -162,6 +156,13 @@ elif get_option('enable-openblas')
 
 endif
 
+# Mutation++
+if get_option('enable-mpp')
+  subdir('externals/Mutationpp-meson')
+  su2_deps     += mpp_dep
+  su2_cpp_args += '-DHAVE_MPP'
+endif
+
 extra_deps = get_option('extra-deps').split(',')
 foreach dep : extra_deps
   if dep != ''
@@ -183,8 +184,8 @@ subdir('SU2_DEF/src')
 subdir('SU2_GEO/src')
 # compile SU2_SOL executable
 subdir('SU2_SOL/src')
-## compile SU2_INTERP executable
-#subdir('SU2_INTERP/src')
+# compile SU2_INTERP executable
+subdir('SU2_INTERP/src')
 # install python scripts
 subdir('SU2_PY')
 # unit tests
@@ -213,6 +214,7 @@ message('''---------------------------------------------------------------------
          OpenBlas:       @8@
          PaStiX:         @9@
          Mixed Float:    @10@
+         Mutation++:     @11@
 
          Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
          and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
@@ -224,8 +226,8 @@ message('''---------------------------------------------------------------------
          export PATH=$PATH:$SU2_RUN
          export PYTHONPATH=$PYTHONPATH:$SU2_RUN
 
-         Use './ninja -C @11@ install' to compile and install SU2
+         Use './ninja -C @12@ install' to compile and install SU2
 '''.format(get_option('prefix')+'/bin', meson.source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
-           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), meson.build_root().split('/')[-1]))
+           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-mpp'), meson.build_root().split('/')[-1]))
 
