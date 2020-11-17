@@ -121,6 +121,11 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
     Gradient_Aux.resize(nPoint,nPrimVarGrad,nDim,0.0);
   }
 
+  if (config->GetAxisymmetric()){
+    Grad_AxiAuxVar.resize(nPoint,3,nDim,0.0);
+    AxiAuxVar.resize(nPoint,3) = su2double(0.0);
+  }
+
   if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }
