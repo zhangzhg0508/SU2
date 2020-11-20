@@ -153,7 +153,7 @@ void CSourceAxisymmetric_Flow::ResidualDiffusion(){
                                                 +v*TWO3*(2*PrimVar_Grad_i[1][1]-PrimVar_Grad_i[1][0]
                                                         -v*yinv+U_i[0]*turb_ke_i))
                               -total_conductivity_i*PrimVar_Grad_i[0][1])
-                        -TWO3*(AxiAuxVar_Grad_i[1][1]+AxiAuxVar_Grad_i[2][1]));
+                        -TWO3*(AxiAuxVar_Grad_i[1][1]+AxiAuxVar_Grad_i[2][0]));
 }
   
 
