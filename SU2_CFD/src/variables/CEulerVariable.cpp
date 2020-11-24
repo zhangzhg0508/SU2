@@ -122,8 +122,9 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
   }
 
   if (config->GetAxisymmetric()){
-    Grad_AxiAuxVar.resize(nPoint,3,nDim,0.0);
-    AxiAuxVar.resize(nPoint,3) = su2double(0.0);
+    nAuxVar = 3;
+    Grad_AuxVar.resize(nPoint,nAuxVar,nDim,0.0);
+    AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
   }
 
   if (config->GetLeastSquaresRequired()) {
