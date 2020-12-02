@@ -344,11 +344,11 @@ void CNEMOEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solv
 void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                            unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  //bool disc_adjoint     = config->GetDiscrete_Adjoint();
-  bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
-  bool center_jst       = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
-  bool center_jst_ke    = (config->GetKind_Centered_Flow() == JST_KE) && (iMesh == MESH_0);
+  //bool disc_adjoint  = config->GetDiscrete_Adjoint();
+  bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  bool center        = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
+  bool center_jst    = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
+  bool center_jst_ke = (config->GetKind_Centered_Flow() == JST_KE) && (iMesh == MESH_0);
 
   /*--- Set the primitive variables ---*/
   ErrorCounter = 0;
@@ -444,13 +444,13 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
   unsigned short iDim, iMarker;
   su2double Mean_LaminarVisc, Mean_ThermalCond, Mean_ThermalCond_ve, Mean_Density, cv, Lambda_1, Lambda_2, K_v, Local_Delta_Time_Visc;
 
-  const bool viscous       = config->GetViscous();
+  const bool viscous = config->GetViscous();
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit     = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool dynamic_grid = config->GetGrid_Movement();
   bool time_steping = config->GetTime_Marching() == TIME_STEPPING;
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+  bool dual_time    = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                       (config->GetTime_Marching() == DT_STEPPING_2ND));
 
   Min_Delta_Time = 1.E6;
   Max_Delta_Time = 0.0;
@@ -735,9 +735,7 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
   /*--- Set booleans based on config settings ---*/
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-  //Unused at the moment
-  //bool centered = ((config->GetKind_Centered_NEMO() == JST) && (iMesh == MESH_0));
-
+  /*--- Loop over edges ---*/
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     /*--- Points in edge, set normal vectors, and number of neighbors ---*/
@@ -939,23 +937,23 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
     err = false;
     for (iVar = 0; iVar < nVar; iVar++)
       if (residual[iVar] != residual[iVar]) err = true;
-    //if (implicit)
-    //  for (iVar = 0; iVar < nVar; iVar++)
-    //    for (jVar = 0; jVar < nVar; jVar++)
-    //      if ((Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) ||
-    //          (Jacobian_j[iVar][jVar] != Jacobian_j[iVar][jVar])   )
-    //        err = true;
+    if (implicit)
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nVar; jVar++)
+          if ((Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) ||
+              (Jacobian_j[iVar][jVar] != Jacobian_j[iVar][jVar])   )
+            err = true;
 
     /*--- Update the residual and Jacobian ---*/
     if (!err) {
       LinSysRes.AddBlock(iPoint, residual);
       LinSysRes.SubtractBlock(jPoint, residual);
-      //if (implicit) {
-      //  Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      //  Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
-      //  Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-      //  Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
-      //}
+      if (implicit) {
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
+        Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
+        Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+      }
     }
   }
 
@@ -1808,7 +1806,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
   su2double *V_infty, *V_domain, *U_domain,*U_infty;
 
   /*--- Set booleans from configuration parameters ---*/
-  //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool viscous  = config->GetViscous();
 
   /*--- Allocate arrays ---*/
@@ -1822,7 +1820,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
     if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Retrieve index of the closest interior node ---*/
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor(); //only used for implicit
+      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
       /*--- Pass boundary node normal to CNumerics ---*/
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
@@ -1837,14 +1835,14 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
 
       /*--- Pass conserved & primitive variables to CNumerics ---*/
       conv_numerics->SetConservative(U_domain, U_infty);
-      conv_numerics->SetPrimitive(V_domain, V_infty);
+      conv_numerics->SetPrimitive   (V_domain, V_infty);
 
       /*--- Pass supplementary information to CNumerics ---*/
-      conv_numerics->SetdPdU(nodes->GetdPdU(iPoint),     node_infty->GetdPdU(0));
-      conv_numerics->SetdTdU(nodes->GetdTdU(iPoint),     node_infty->GetdTdU(0));
+      conv_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   node_infty->GetdPdU(0));
+      conv_numerics->SetdTdU  (nodes->GetdTdU(iPoint),   node_infty->GetdTdU(0));
       conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
-      conv_numerics->SetEve(nodes->GetEve(iPoint),       node_infty->GetEve(0));
-      conv_numerics->SetCvve(nodes->GetCvve(iPoint),     node_infty->GetCvve(0));
+      conv_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
+      conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
 
       /*--- Compute the convective residual (and Jacobian) ---*/
       // Note: This uses the specified boundary num. method specified in driver_structure.cpp
@@ -1853,8 +1851,8 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
       /*--- Apply contribution to the linear system ---*/
       LinSysRes.AddBlock(iPoint, residual);
 
-      //if (implicit)
-      //  Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      if (implicit)
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
       /*--- Viscous contribution ---*/
       if (viscous) {
@@ -1903,9 +1901,9 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
         auto residual = visc_numerics->ComputeResidual(config);
 
         LinSysRes.SubtractBlock(iPoint, residual);
-        //if (implicit) {
-        //  Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        //}
+        if (implicit) {
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        }
       }
     }
   }
@@ -2151,7 +2149,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
       LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
-      //if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
 //      /*--- Viscous contribution ---*/
 //      if (viscous) {
@@ -2368,8 +2366,8 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
       LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
-      //if (implicit)
-      //  Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      if (implicit)
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
       /*--- Viscous contribution ---*/
 //      if (viscous) {
@@ -2696,8 +2694,8 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solut
       LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
-      //if (implicit)
-      //  Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      if (implicit)
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
     }
   }
 
@@ -2724,7 +2722,7 @@ void CNEMOEulerSolver::SetResidual_DualTime(CGeometry *geometry,
   unsigned long iPoint;
   su2double *U_time_nM1, *U_time_n, *U_time_nP1, Volume_nM1, Volume_n, Volume_nP1, TimeStep;
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit     = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
   bool dynamic_grid = config->GetGrid_Movement();
 
   /*--- loop over points ---*/
