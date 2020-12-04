@@ -132,6 +132,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   Non_Physical.resize(nPoint) = false;
 
   /* Under-relaxation parameter. */
+  UnderRelaxation.resize(nPoint) = su2double(1.0);
   LocalCFL.resize(nPoint) = su2double(0.0);
 
   /*--- Loop over all points --*/

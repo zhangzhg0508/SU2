@@ -2989,4 +2989,3 @@ void CNEMOEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCon
   Restart_Vars = nullptr; Restart_Data = nullptr;
 
 }
-

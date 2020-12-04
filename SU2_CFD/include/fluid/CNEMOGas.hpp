@@ -125,12 +125,12 @@ public:
   /*!
    * \brief Get species net production rates.
    */
-  virtual vector<su2double>& GetNetProductionRates() = 0;
+  virtual vector<su2double>& GetNetProductionRates(bool impicit = false; su2double **val_Jacobian) = 0;
   
   /*!
    * \brief Get vibrational energy source term.
    */
-  virtual su2double GetEveSourceTerm() { return 0; }
+  virtual su2double GetEveSourceTerm(bool implicit = false, su2double **val_jacobian) { return 0; }
 
   /*!
    * \brief Get vector of species V-E energy.

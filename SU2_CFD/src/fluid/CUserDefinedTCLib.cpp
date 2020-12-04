@@ -636,11 +636,15 @@ vector<su2double>& CUserDefinedTCLib::GetSpeciesCvTraRot(){
   return Cvtrs;
 }
 
-vector<su2double>& CUserDefinedTCLib::GetSpeciesCvVibEle(){
+vector<su2double>& CUserDefinedTCLib::GetSpeciesCvVibEle(su2double val_T){
 
   su2double thoTve, exptv, num, num2, num3, denom, Cvvs, Cves;
   unsigned short iElectron = nSpecies-1;
 
+  /*--- Rename cause im lazy TODO ---*/
+  Tve = val_T;
+
+  /*--- Loop through species ---*/
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++){
 
     /*--- If requesting electron specific heat ---*/
@@ -780,11 +784,12 @@ vector<su2double>& CUserDefinedTCLib::GetSpeciesEve(su2double val_T){
 
 }
 
-vector<su2double>& CUserDefinedTCLib::GetNetProductionRates(){
+vector<su2double>& CUserDefinedTCLib::GetNetProductionRates(bool implicit, su2double **val_jacobian){
 
   /*--- Nonequilibrium chemistry ---*/
   unsigned short ii, iReaction;
-  su2double T_min, epsilon, Thf, Thb, Trxnf, Trxnb, Keq, kf, kb, kfb, fwdRxn, bkwRxn, af, bf, ab, bb;
+  su2double T_min, epsilon, Thf, Thb, Trxnf, Trxnb,
+  Keq, kf, kb, kfb, fwdRxn, bkwRxn, af, bf, ab, bb;
 
   /*--- Define artificial chemistry parameters ---*/
   // Note: These parameters artificially increase the rate-controlling reaction
@@ -792,6 +797,7 @@ vector<su2double>& CUserDefinedTCLib::GetNetProductionRates(){
   //       source term.
   T_min   = 800.0;
   epsilon = 80;
+
   /*--- Define preferential dissociation coefficient ---*/
   //alpha = 0.3;
 
@@ -856,7 +862,120 @@ vector<su2double>& CUserDefinedTCLib::GetNetProductionRates(){
       if (iSpecies != nSpecies)
         ws[iSpecies] -= MolarMass[iSpecies] * (fwdRxn-bkwRxn);
     }
-  }
+
+    if (implicit) {
+
+      /*--- Initializing derivative variables ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        dkf[iVar] = 0.0;   dkb[iVar] = 0.0;
+        dRfok[iVar] = 0.0; dRbok[iVar] = 0.0;
+      }
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        alphak[iSpecies] = 0;
+        betak[iSpecies]  = 0;
+      }
+
+      /*--- Derivative of modified temperature wrt Trxnf ---*/
+      dThf = 0.5 * (1.0 + (Trxnf-T_min)/sqrt((Trxnf-T_min)*(Trxnf-T_min)
+                                                     + epsilon*epsilon));
+      dThb = 0.5 * (1.0 + (Trxnb-T_min)/sqrt((Trxnb-T_min)*(Trxnb-T_min)
+                                                     + epsilon*epsilon));
+
+      /*--- Fwd rate coefficient derivatives ---*/
+      coeff = kf * (eta/Thf+theta/(Thf*Thf)) * dThf;
+      for (iVar = 0; iVar < nVar; iVar++) {
+        dkf[iVar] = coeff * ( af*Trxnf/T*dTdU_i[iVar] +
+                              bf*Trxnf/Tve*dTvedU_i[iVar] );
+      }
+
+      /*--- Bkwd rate coefficient derivatives ---*/
+      coeff = kb * (eta/Thb+theta/(Thb*Thb)) * dThb;
+      for (iVar = 0; iVar < nVar; iVar++) {
+        dkb[iVar] = coeff*( ab*Trxnb/T*dTdU_i[iVar] + bb*Trxnb/Tve*dTvedU_i[iVar])
+                          - kb*((A[0]*Thb/1E4 - A[2] - A[3]*1E4/Thb
+                          - 2*A[4]*(1E4/Thb)*(1E4/Thb))/Thb) * dThb *
+                          ( ab*Trxnb/T*dTdU_i[iVar] + bb*Trxnb/Tve*dTvedU_i[iVar]);
+      }
+
+      /*--- Rxn rate derivatives ---*/
+      for (ii = 0; ii < 3; ii++) {
+
+        /*--- Products ---*/
+        iSpecies = RxnMap[iReaction][1][ii];
+        if (iSpecies != nSpecies)
+          betak[iSpecies]++;
+
+        /*--- Reactants ---*/
+        iSpecies = RxnMap[iReaction][0][ii];
+        if (iSpecies != nSpecies)
+          alphak[iSpecies]++;
+      }
+
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+
+        // Fwd
+        dRfok[iSpecies] =  0.001*alphak[iSpecies]/Ms[iSpecies] *
+                           pow(0.001*U_i[iSpecies]/Ms[iSpecies],
+                           max(0, alphak[iSpecies]-1));
+
+        for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+          if (jSpecies != iSpecies)
+            dRfok[iSpecies] *= pow(0.001*U_i[jSpecies]/Ms[jSpecies],
+                               alphak[jSpecies]);
+        dRfok[iSpecies] *= 1000.0;
+
+        // Bkw
+        dRbok[iSpecies] =  0.001*betak[iSpecies]/Ms[iSpecies] *
+                           pow(0.001*U_i[iSpecies]/Ms[iSpecies],
+                           max(0, betak[iSpecies]-1));
+
+        for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+          if (jSpecies != iSpecies)
+            dRbok[iSpecies] *= pow(0.001*U_i[jSpecies]/Ms[jSpecies],
+                               betak[jSpecies]);
+        dRbok[iSpecies] *= 1000.0;
+      }
+
+      nEve = nSpecies+nDim+1;
+      for (ii = 0; ii < 3; ii++) {
+
+        /*--- Products ---*/
+        iSpecies = RxnMap[iReaction][1][ii];
+        if (iSpecies != nSpecies) {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            val_Jacobian[iSpecies][iVar] += Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar] -
+                                                             dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]) * Volume;
+            val_Jacobian[nEve][iVar]     += Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar] -
+                                                             dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]) *
+                                                             eve_i[iSpecies] * Volume;
+          }
+
+          for (jVar = 0; jVar < nVar; jVar++) {
+            val_Jacobian[nEve][jVar] += Ms[iSpecies] * (fwdRxn-bkwRxn)* Cvve_i[iSpecies] *
+                                                                        dTvedU_i[jVar] * Volume;
+          }
+        }
+
+        /*--- Reactants ---*/
+        iSpecies = RxnMap[iReaction][0][ii];
+        if (iSpecies != nSpecies) {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            val_Jacobian[iSpecies][iVar] -= Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar] -
+                                                             dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]) * Volume;
+           val_Jacobian[nEve][iVar] -=      Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar] -
+                                                             dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]) *
+                                                            eve_i[iSpecies] * Volume;
+          }
+
+          for (jVar = 0; jVar < nVar; jVar++) {
+            val_Jacobian[nEve][jVar] -= Ms[iSpecies] * (fwdRxn-bkwRxn) * Cvve_i[iSpecies] *
+                                                                         dTvedU_i[jVar] * Volume;
+          }
+        }
+      } // ii
+    } // implicit
+  } //iReaction
+
   return ws;
 }
 
@@ -910,14 +1029,15 @@ void CUserDefinedTCLib::GetKeqConstants(unsigned short val_Reaction) {
   }
 }
 
-su2double CUserDefinedTCLib::GetEveSourceTerm(){
+su2double CUserDefinedTCLib::GetEveSourceTerm(bool implicit, su2double **val_jacobian, su2double *V ){
 
   /*--- Trans.-rot. & vibrational energy exchange via inelastic collisions ---*/
   // Note: Electronic energy not implemented
   // Note: Landau-Teller formulation
   // Note: Millikan & White relaxation time (requires P in Atm.)
   // Note: Park limiting cross section
-  su2double conc, N, mu, A_sr, B_sr, num, denom, Cs, sig_s, tau_sr, tauP, tauMW, taus, omegaVT, omegaCV;
+  su2double conc, N, mu, A_sr, B_sr, num, denom, Cs, sig_s,
+  tau_sr, tauP, tauMW, taus, omegaVT, omegaCV;
   vector<su2double> MolarFrac, eve_eq, eve;
 
   MolarFrac.resize(nSpecies,0.0);
@@ -979,6 +1099,29 @@ su2double CUserDefinedTCLib::GetEveSourceTerm(){
   }
 
   omega = omegaVT + omegaCV;
+
+  nEv = nSpecies+nDim+1;
+  if (implicit){
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+
+        /*--- Compute Cvvs ---*/
+        Cvvs_eq = GetSpeciesCvVibEle(T);
+        Cvve    = GetSpeciesCvVibEle(Tve);
+
+        /*--- Compute Temperature gradients ---*/
+        ComputedTdU(V,dTdU);
+        ComputedTvedU(V,dTvedU);
+
+        for (iVar = 0; iVar < nVar; iVar++) {
+          val_Jacobian[nEv][iVar] += rhos/taus[iSpecies]*(Cvvs_eq[iSpecies]*dTdU[iVar] -
+                                                          Cvve[iSpecies]*dTvedU[iVar])*Volume;
+        }
+    }
+
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      val_Jacobian[nEv][iSpecies] += (eve_eq[iSpecies]-eve[iSpecies])/taus*Volume;
+
+  }
 
   return omega;
 

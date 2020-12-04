@@ -88,12 +88,12 @@ public:
   /*!
    * \brief Get species net production rates.
    */
-  vector<su2double>& GetNetProductionRates() final;
+  vector<su2double>& GetNetProductionRates(bool impicit = false; su2double **val_Jacobian) final;
 
   /*!
    * \brief Get vibrational energy source term.
    */
-  su2double GetEveSourceTerm() final;
+  su2double GetEveSourceTerm(bool implicit = false, su2double **val_jacobian) final;
   
   /*!
    * \brief Get species enthalpies.
