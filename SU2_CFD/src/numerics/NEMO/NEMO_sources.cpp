@@ -162,8 +162,10 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
   fluidmodel->SetTDStateRhosTTv(rhos, T, Tve);
 
   /*--- Compute residual and jacobians ---*/
-  if (implicit) {VTterm = fluidmodel->GetEveSourceTerm(implicit, jacobian, V_i);}
-  else          {VTterm = fluidmodel->GetEveSourceTerm(implicit, Jacobian);} 
+  VTterm = fluidmodel -> GetEveSourceTerm();
+  if (implicit) 
+    fluidmodel->GetEveSourceTermImplicit(jacobian, V_i);
+  
   residual[nSpecies+nDim+1] = VTterm * Volume;
 
   /*--- Relax/limit vt transfer ---*/

@@ -55,7 +55,11 @@ vector<su2double>& CMutationTCLib::GetSpeciesEve(su2double val_T){return MassFra
 
 vector<su2double>& CMutationTCLib::GetNetProductionRates(bool impicit = false; su2double **val_Jacobian){return MassFrac;}
 
-su2double CMutationTCLib::GetEveSourceTerm(bool implicit = false, su2double **val_jacobian){return 0;}
+void CMutationTCLib::ChemistryJacobian(su2double *V; su2double **val_Jacobian) final;
+
+su2double CMutationTCLib::GetEveSourceTerm(){return 0;}
+
+void GetEveSourceTermImplicit(su2double *V, su2double **val_jacobian) final;
 
 vector<su2double>& CMutationTCLib::GetSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){return MassFrac;}
 
