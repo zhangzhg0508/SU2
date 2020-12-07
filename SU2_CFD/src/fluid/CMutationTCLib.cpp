@@ -53,7 +53,7 @@ vector<su2double>& CMutationTCLib::GetMixtureEnergies(){return MassFrac;}
 
 vector<su2double>& CMutationTCLib::GetSpeciesEve(su2double val_T){return MassFrac;}
 
-vector<su2double>& CMutationTCLib::GetNetProductionRates(){return MassFrac;}
+vector<su2double>& CMutationTCLib::GetNetProductionRates(bool implicit, su2double *V, su2double **val_jacobian){return MassFrac;}
 
 su2double CMutationTCLib::GetEveSourceTerm(){return 0;}
 

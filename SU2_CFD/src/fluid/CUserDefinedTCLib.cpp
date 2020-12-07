@@ -780,7 +780,7 @@ vector<su2double>& CUserDefinedTCLib::GetSpeciesEve(su2double val_T){
 
 }
 
-vector<su2double>& CUserDefinedTCLib::GetNetProductionRates(){
+vector<su2double>& CUserDefinedTCLib::GetNetProductionRates(bool implicit, su2double *V, su2double **val_jacobian){
 
   /*--- Nonequilibrium chemistry ---*/
   unsigned short ii, iReaction;

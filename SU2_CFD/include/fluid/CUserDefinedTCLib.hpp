@@ -125,7 +125,7 @@ public:
   /*!
    * \brief Populate chemical source term jacobian. 
    */
-  void ChemistryJacobian(su2double *V; su2double **val_Jacobian) final;
+  void ChemistryJacobian(su2double *V, su2double **val_Jacobian) final;
 
   /*!
    * \brief Get vibrational energy source term.
