@@ -81,6 +81,8 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
   su2double rho_i, rho_j, 
   e_ve_i, e_ve_j, mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
 
+  su2double Ru; 
+
   /*--- Compute geometric quantities ---*/
   Area = 0;
   for (iDim = 0; iDim < nDim; iDim++)
@@ -165,8 +167,8 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
   if (implicit){
 
      auto& Ms = fluidmodel->GetSpeciesMolarMass();
-     Cvtrs    = fluidmodel->GetSpeciesCvTraRot();
-
+     Cvtr     = fluidmodel->GetSpeciesCvTraRot();
+     Ru       = 1000.0*UNIVERSAL_GAS_CONSTANT;
      rhoCvtr_i = V_i[RHOCVTR_INDEX];
      rhoCvtr_j = V_j[RHOCVTR_INDEX];
 
@@ -183,10 +185,9 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
 
     /*--- Sound speed derivatives: Species density ---*/
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-      Cvtrs = (3.0/2.0+xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
-      daL[iSpecies] = 1.0/(2.0*a_i) * (1/rhoCvtr_i*(Ru/Ms[iSpecies] - Cvtrs*dPdU_i[nSpecies+nDim])*P_i/rho_i
+      daL[iSpecies] = 1.0/(2.0*a_i) * (1/rhoCvtr_i*(Ru/Ms[iSpecies] - Cvtr[iSpecies]*dPdU_i[nSpecies+nDim])*P_i/rho_i
                     + 1.0/rho_i*(1.0+dPdU_i[nSpecies+nDim])*(dPdU_i[iSpecies] - P_i/rho_i));
-      daR[iSpecies] = 1.0/(2.0*a_j) * (1/rhoCvtr_j*(Ru/Ms[iSpecies] - Cvtrs*dPdU_j[nSpecies+nDim])*P_j/rho_j
+      daR[iSpecies] = 1.0/(2.0*a_j) * (1/rhoCvtr_j*(Ru/Ms[iSpecies] - Cvtr[iSpecies]*dPdU_j[nSpecies+nDim])*P_j/rho_j
                     + 1.0/rho_j*(1.0+dPdU_j[nSpecies+nDim])*(dPdU_j[iSpecies] - P_j/rho_j));
     }
     for (iSpecies = 0; iSpecies < nEl; iSpecies++) {

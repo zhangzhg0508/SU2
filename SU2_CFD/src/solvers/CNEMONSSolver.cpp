@@ -230,9 +230,9 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
                                      unsigned short iRKStep) {
 
   bool err;
-  unsigned short iVar;
+  unsigned short iVar, jVar;
   unsigned long iPoint, jPoint, iEdge;
-  bool implicit = (config->GetKind_TimeIntScheme_Flow==EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   CNumerics* numerics = numerics_container[VISC_TERM];
 
@@ -680,9 +680,9 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
   unsigned long iVertex, iPoint, jPoint;
   su2double ktr, kve, Ti, Tvei, Tj, Tvej, Twall, dij, theta,
   Area, *Normal, UnitNormal[3], *Coord_i, *Coord_j, C;
-  su2double *V, dTdU, dTvedU;
+  su2double *V, *dTdU, *dTvedU;
   bool ionization = config->GetIonization();
-  bool implicit = (config->GetKind_TimeIntScheme_Flow==EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow()==EULER_IMPLICIT);
 
   if (ionization) {
     cout << "BC_ISOTHERMAL: NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION" << endl;

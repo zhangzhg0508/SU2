@@ -44,8 +44,9 @@ public:
   su2double rhoCvtr_i, rhoCvtr_j;
   unsigned short nPrimVar, nPrimVarGrad;
 
-  su2double* Flux = nullptr;            /*!< \brief The flux / residual across the edge. */
-
+  su2double* Flux        = nullptr;            /*!< \brief The flux / residual across the edge. */
+  su2double** Jacobian_i = nullptr;
+  su2double** Jacobian_j = nullptr;
   unsigned short nSpecies, nHeavy, nEl; /*!< \brief Number of species present in plasma */
   
   /*--- Graidents w.r.t. conservative variables. ---*/
@@ -57,7 +58,7 @@ public:
   su2double **dVdUi, **dVdUj;
   su2double *sumdFdYjh, *sumdFdYjeve;
   su2double **dFdYi, **dFdYj;
-  su2doulbe **dJdr_i,**dJdr_j;
+  su2double **dJdr_i,**dJdr_j;
   
   vector<su2double> hs;
   vector<su2double> Cvtr;

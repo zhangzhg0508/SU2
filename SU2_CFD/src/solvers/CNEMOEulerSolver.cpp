@@ -2648,7 +2648,7 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solut
   su2double *U_outlet, *U_domain;
 
   bool dynamic_grid = config->GetGrid_Movement();
-  bool implicit     = (config_>GetKind_TimeIntScheme_Flow == EULER_IMPLICIT);
+  bool implicit     = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   su2double *Normal = new su2double[nDim];
