@@ -103,7 +103,7 @@ public:
   /*!
    * \brief Get vibration enery source term jacobian.
    */
-  void GetEveSourceTermImplicit(su2double *V, su2double **val_jacobian);
+  void GetEveSourceTermImplicit(su2double *V, su2double **val_jacobian)
 
   /*!
    * \brief Get species enthalpies.

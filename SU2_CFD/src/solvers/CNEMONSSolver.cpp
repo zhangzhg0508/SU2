@@ -288,23 +288,23 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
     err = false;
     for (iVar = 0; iVar < nVar; iVar++)
       if (residual[iVar] != residual[iVar]) err = true;
-    //if (implicit)
-    //  for (iVar = 0; iVar < nVar; iVar++)
-    //    for (jVar = 0; jVar < nVar; jVar++)
-    //      if ((Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) ||
-    //          (Jacobian_j[iVar][jVar] != Jacobian_j[iVar][jVar])   )
-    //        err = true;
+    if (implicit)
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nVar; jVar++)
+          if ((Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) ||
+              (Jacobian_j[iVar][jVar] != Jacobian_j[iVar][jVar])   )
+            err = true;
 
     /*--- Update the residual and Jacobian ---*/
     if (!err) {
       LinSysRes.SubtractBlock(iPoint, residual);
       LinSysRes.AddBlock(jPoint, residual);
-      //if (implicit) {
-      //  Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      //  Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-      //  Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-      //  Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
-      //}
+      if (implicit) {
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
+        Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+      }
     }
   } //iEdge
 }
@@ -782,20 +782,20 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
 
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
 
-      //if (implicit) {
-      //  for (iVar = 0; iVar < nVar; iVar++)
-      //    for (jVar = 0; jVar < nVar; jVar++)
-      //      Jacobian_i[iVar][jVar] = 0.0;
-      //
-      //  dTdU   = nodes->GetdTdU(iPoint);
-      //  dTvedU = nodes->GetdTvedU(iPoint);
-      //  for (iVar = 0; iVar < nVar; iVar++) {
-      //    Jacobian_i[nSpecies+nDim][iVar]   = -(ktr*theta/dij*dTdU[iVar] +
-      //                                          kve*theta/dij*dTvedU[iVar])*Area;
-      //    Jacobian_i[nSpecies+nDim+1][iVar] = - kve*theta/dij*dTvedU[iVar]*Area;
-      //  }
-      //  Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      //} // implicit
+      if (implicit) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          for (jVar = 0; jVar < nVar; jVar++)
+            Jacobian_i[iVar][jVar] = 0.0;
+      
+        dTdU   = nodes->GetdTdU(iPoint);
+        dTvedU = nodes->GetdTvedU(iPoint);
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Jacobian_i[nSpecies+nDim][iVar]   = -(ktr*theta/dij*dTdU[iVar] +
+                                                kve*theta/dij*dTvedU[iVar])*Area;
+          Jacobian_i[nSpecies+nDim+1][iVar] = - kve*theta/dij*dTvedU[iVar]*Area;
+        }
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      } // implicit
     }
   }
 }
