@@ -133,7 +133,7 @@ su2double CNEMOGas::ComputeGasConstant(){
 
 su2double CNEMOGas::GetrhoCvve() {
 
-    Cvves = GetSpeciesCvVibEle();
+    Cvves = GetSpeciesCvVibEle(val_T);
 
     rhoCvve = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)

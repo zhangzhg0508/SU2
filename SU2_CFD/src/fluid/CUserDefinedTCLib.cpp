@@ -864,7 +864,7 @@ vector<su2double>& CUserDefinedTCLib::GetNetProductionRates(bool implicit, su2do
     }
 
     if (implicit) {
-      ChemistyJacobain(V, val_jacobian);
+      ChemistryJacobian(V, val_jacobian);
     }
   } //iReaction
 
@@ -874,11 +874,11 @@ vector<su2double>& CUserDefinedTCLib::GetNetProductionRates(bool implicit, su2do
 void CUsersDefinedTCLib::ChemistryJacobian(su2double *V, su2double **val_jacobian) {
 
   /*--- Initializing derivative variables ---*/
-  for (iVar = 0; iVar < nVar; iVar++) {
-    dkf[iVar] = 0.0;   dkb[iVar] = 0.0;
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    dkf[iVar]   = 0.0; dkb[iVar]   = 0.0;
     dRfok[iVar] = 0.0; dRbok[iVar] = 0.0;
   }
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     alphak[iSpecies] = 0;
     betak[iSpecies]  = 0;
   }
@@ -1278,7 +1278,7 @@ void CUserDefinedTCLib::ThermalConductivitiesWBE(){
   kves.resize(nSpecies,0.0);
 
 
-  Cvves = GetSpeciesCvVibEle();
+  Cvves = GetSpeciesCvVibEle(val_T);
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     ks[iSpecies] = mus[iSpecies]*(15.0/4.0 + RotationModes[iSpecies]/2.0)*Ru/MolarMass[iSpecies];
@@ -1459,7 +1459,7 @@ void CUserDefinedTCLib::ThermalConductivitiesGY(){
   }
 
   /*--- Mixture vibrational-electronic specific heat ---*/
-  Cvves = GetSpeciesCvVibEle();
+  Cvves = GetSpeciesCvVibEle(val_T);
   rhoCvve = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     rhoCvve += rhos[iSpecies]*Cvves[iSpecies];
