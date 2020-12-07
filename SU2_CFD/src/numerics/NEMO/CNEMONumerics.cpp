@@ -413,12 +413,14 @@ void CNEMONumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
   RuSI= UNIVERSAL_GAS_CONSTANT;
   Ru  = 1000.0*RuSI;
 
-  hs = fluidmodel->GetSpeciesEnthalpy(T, val_Mean_Eve);
+  hs       = fluidmodel->GetSpeciesEnthalpy(T, Tve, val_Mean_Eve);
+  Cvtr     = fluidmodel->GetSpeciesCvTraRot();
+  auto& Ms = fluidmodel->GetSpeciesMolarMass();
+
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     Ys[iSpecies]   = val_Mean_PrimVar[RHOS_INDEX+iSpecies];
     Ys_i[iSpecies] = V_i[RHOS_INDEX+iSpecies]/V_i[RHO_INDEX];
     Ys_j[iSpecies] = V_j[RHOS_INDEX+iSpecies]/V_j[RHO_INDEX];
-    Cvtr[iSpecies] = (3.0/2.0 + xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
   }
   for (iDim = 0; iDim < nDim; iDim++)
     vel[iDim] = val_Mean_PrimVar[VEL_INDEX+iDim];

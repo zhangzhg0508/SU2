@@ -41,19 +41,29 @@ public:
   su2double *rhos_j, *u_j;
   su2double a_i, P_i, h_i;
   su2double a_j, P_j, h_j;
+  su2double rhoCvtr_i, rhoCvtr_j;
   unsigned short nPrimVar, nPrimVarGrad;
 
   su2double* Flux = nullptr;            /*!< \brief The flux / residual across the edge. */
 
   unsigned short nSpecies, nHeavy, nEl; /*!< \brief Number of species present in plasma */
   
+  /*--- Graidents w.r.t. conservative variables. ---*/
   su2double *dPdU_i, *dPdU_j;
   su2double *dTdU_i, *dTdU_j;
   su2double *dTvedU_i, *dTvedU_j;
 
+  su2double **dFdVi, **dFdVj;
+  su2double **dVdUi, **dVdUj;
+  su2double *sumdFdYjh, *sumdFdYjeve;
+  su2double **dFdYi, **dFdYj;
+  su2doulbe **dJdr_i,**dJdr_j;
+  
   vector<su2double> hs;
+  vector<su2double> Cvtr;
   su2double *eve_i, *eve_j, *Cvve_i, *Cvve_j;
- 
+  su2double *Ys, *Ys_i, *Ys_j;
+
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX,
   LAM_VISC_INDEX, EDDY_VISC_INDEX;

@@ -794,7 +794,7 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
 void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                        CConfig *config, unsigned short iMesh) {
   unsigned long iEdge, iPoint, jPoint;
-  unsigned short iDim, iVar;
+  unsigned short iDim, iVar, jVar;
   su2double *U_i, *U_j, *V_i, *V_j;
   su2double **GradU_i, **GradU_j, ProjGradU_i, ProjGradU_j;
   su2double *Limiter_i, *Limiter_j;
@@ -1927,6 +1927,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
   const su2double *Flow_Dir;
 
   bool dynamic_grid         = config->GetGrid_Movement();
+  bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   su2double Two_Gamma_M1    = 2.0/Gamma_Minus_One;
   su2double Gas_Constant    = config->GetGas_ConstantND();
   unsigned short Kind_Inlet = config->GetKind_Inlet();
@@ -2196,9 +2197,10 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 
   rhos.resize(nSpecies,0.0);
 
-  string Marker_Tag       = config->GetMarker_All_TagBound(val_marker);
-  bool dynamic_grid       = config->GetGrid_Movement();
-  bool gravity            = config->GetGravityForce();
+  string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
+  bool dynamic_grid  = config->GetGrid_Movement();
+  bool gravity       = config->GetGravityForce();
+  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   su2double *U_domain = new su2double[nVar];      su2double *U_outlet = new su2double[nVar];
   su2double *V_domain = new su2double[nPrimVar];  su2double *V_outlet = new su2double[nPrimVar];
@@ -2646,6 +2648,7 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solut
   su2double *U_outlet, *U_domain;
 
   bool dynamic_grid = config->GetGrid_Movement();
+  bool implicit     = (config_>GetKind_TimeIntScheme_Flow == EULER_IMPLICIT);
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   su2double *Normal = new su2double[nDim];

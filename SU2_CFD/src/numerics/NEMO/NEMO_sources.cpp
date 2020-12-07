@@ -164,7 +164,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
   /*--- Compute residual and jacobians ---*/
   VTterm = fluidmodel -> GetEveSourceTerm();
   if (implicit) 
-    fluidmodel->GetEveSourceTermImplicit(jacobian, V_i);
+    fluidmodel->GetEveSourceTermImplicit(V_i, jacobian);
   
   residual[nSpecies+nDim+1] = VTterm * Volume;
 
@@ -223,7 +223,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
    /*--- Calculate additional quantities ---*/
    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-       dYdr[iSpecies][jSpecies] += -1/rho*Ys[iSpecies];
+       dYdr[iSpecies][jSpecies] += -1/rho*Y[iSpecies];
      }
      dYdr[iSpecies][iSpecies] += 1/rho;
    }
@@ -241,7 +241,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
    // X-momentum
    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
      jacobian[nSpecies][iSpecies] = -rhou*rhov/(rho*rho);
-   jacobian[nSpecies][nSpecies] = rhov/rho;
+   jacobian[nSpecies][nSpecies]   = rhov/rho;
    jacobian[nSpecies][nSpecies+1] = rhou/rho;
 
    // Y-momentum
