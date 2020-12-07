@@ -38,16 +38,10 @@ CSource_NEMO::CSource_NEMO(unsigned short val_nDim,
 
   unsigned short iSpecies;
 
-  /*--- Allocate arrays ---*/
-  alphak = new int[nSpecies];
-  betak  = new int[nSpecies];
-  Y      = new su2double[nSpecies];
-  dkf    = new su2double[nVar];
-  dkb    = new su2double[nVar];
-  dRfok  = new su2double[nVar];
-  dRbok  = new su2double[nVar];
-
   ws.resize(nSpecies,0.0);
+
+  /*--- Allocate arrays ---*/
+  Y      = new su2double[nSpecies];
 
   dYdr = new su2double*[nSpecies];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -65,18 +59,11 @@ CSource_NEMO::~CSource_NEMO(void) {
   unsigned short iSpecies;
 
   /*--- Deallocate arrays ---*/
-
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     delete [] dYdr[iSpecies];
   delete [] dYdr;
 
   delete [] Y;
-  delete [] alphak;
-  delete [] betak;
-  delete [] dkf;
-  delete [] dkb;
-  delete [] dRfok;
-  delete [] dRbok;
 
   delete [] residual;
   if (jacobian){

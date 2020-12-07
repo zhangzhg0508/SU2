@@ -50,7 +50,7 @@ private:
   ArrheniusEta,                     /*!< \brief Arrhenius reaction temperature exponent */
   ArrheniusTheta,                   /*!< \brief Arrhenius reaction characteristic temperature */
   CharVibTemp,                      /*!< \brief Characteristic vibrational temperature for e_vib */
-  RotationModes,	          /*!< \brief Rotational modes of energy storage */
+  RotationModes,	                /*!< \brief Rotational modes of energy storage */
   Tcf_a,                          /*!< \brief Rate controlling temperature exponent (fwd) */
   Tcf_b,                          /*!< \brief Rate controlling temperature exponent (fwd) */
   Tcb_a,                          /*!< \brief Rate controlling temperature exponent (bkw) */
@@ -71,6 +71,18 @@ private:
   
   C3DDoubleMatrix Omega00,       /*!< \brief Collision integrals (Omega(0,0)) */
   Omega11;                       /*!< \brief Collision integrals (Omega(1,1)) */
+
+  /*--- Implicit Variables *---*/
+  vector<su2double>
+  dPdU, dTdU, dTvedU,
+  dkf, dkb,
+  dRfok, dRbok,
+  alphaK, betak,
+  dThf, Trxnf, T_min,
+  dThb, Trxnb,
+  kf,kb,coeff,epsilon,eta,
+  theta, af, bf, bb,
+  eve, eve_eq, cvve, cvve_eq;
 
 public:
 
@@ -125,7 +137,7 @@ public:
   /*!
    * \brief Populate chemical source term jacobian. 
    */
-  void ChemistryJacobian(su2double *V, su2double **val_Jacobian) final;
+  void ChemistryJacobian(unsigned short iReaction, su2double *V, su2double **val_Jacobian) final;
 
   /*!
    * \brief Get vibrational energy source term.
