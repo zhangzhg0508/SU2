@@ -105,7 +105,7 @@ public:
   /*!
    * \brief Get species V-E specific heats at constant volume.
    */
-  vector<su2double>& GetSpeciesCvVibEle(val_T) final;
+  vector<su2double>& GetSpeciesCvVibEle(su2double val_T) final;
 
   /*!
    * \brief Get mixture energies (total internal energy and vibrational energy).

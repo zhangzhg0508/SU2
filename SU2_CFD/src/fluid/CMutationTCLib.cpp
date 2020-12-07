@@ -47,7 +47,7 @@ vector<su2double>& CMutationTCLib::GetSpeciesMolarMass(){return MassFrac;}
 
 vector<su2double>& CMutationTCLib::GetSpeciesCvTraRot(){return MassFrac;}
 
-vector<su2double>& CMutationTCLib::GetSpeciesCvVibEle(val_T){return MassFrac;}
+vector<su2double>& CMutationTCLib::GetSpeciesCvVibEle(su2double val_T){return MassFrac;}
 
 vector<su2double>& CMutationTCLib::GetMixtureEnergies(){return MassFrac;}
 
@@ -57,7 +57,7 @@ vector<su2double>& CMutationTCLib::GetNetProductionRates(bool implicit, su2doubl
 
 su2double CMutationTCLib::GetEveSourceTerm(){return 0;}
 
-void GetEveSourceTermImplicit(su2double *V, su2double **val_jacobian) final;
+void CMutationTCLib::GetEveSourceTermImplicit(su2double *V, su2double **val_jacobian) final;
 
 vector<su2double>& CMutationTCLib::GetSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){return MassFrac;}
 
