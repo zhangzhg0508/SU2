@@ -324,6 +324,34 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
   residual[nSpecies+2] = yinv*rhov*H*Volume;
   residual[nSpecies+3] = yinv*rhov*U_i[nSpecies+nDim+1]/rho*Volume;
 
+    if (viscous) {
+
+    if (!rans){ turb_ke_i = 0.0; }
+    su2double laminar_viscosity_i    = V_i[nDim+5];
+    su2double eddy_viscosity_i       = V_i[nDim+6];
+    su2double thermal_conductivity_i = V_i[nDim+7];
+    su2double heat_capacity_cp_i     = V_i[nDim+8];
+
+    su2double total_viscosity_i = laminar_viscosity_i + eddy_viscosity_i;
+    su2double total_conductivity_i = thermal_conductivity_i + heat_capacity_cp_i*eddy_viscosity_i/Prandtl_Turb;
+  
+    su2double u = U_i[1]/U_i[0];
+    su2double v = U_i[2]/U_i[0];
+
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      residual[iSpecies] -= 0.0;
+    residual[nSpecies] -= Volume*(yinv*total_viscosity_i*(PrimVar_Grad_i[1][1]+PrimVar_Grad_i[2][0]) 
+                                                                -TWO3*AuxVar_Grad_i[0][0]);
+    residual[nSpecies+1] -= Volume*(yinv*total_viscosity_i*2*(PrimVar_Grad_i[2][1]-v*yinv)
+                                                                -TWO3*AuxVar_Grad_i[0][1]);
+    residual[nSpecies+2] = Volume*(yinv*(total_viscosity_i*(u*(PrimVar_Grad_i[2][0]+PrimVar_Grad_i[1][1])
+                                                 +v*TWO3*(2*PrimVar_Grad_i[1][1]-PrimVar_Grad_i[1][0]
+                                                 -v*yinv+U_i[0]*turb_ke_i))
+                                                 -total_conductivity_i*PrimVar_Grad_i[0][1])
+                                                 -TWO3*(AuxVar_Grad_i[1][1]+AuxVar_Grad_i[2][1]));;
+    residual[nSpecies+3] = 0;
+  }
+
 //  if (implicit) {
 //
 //    /*--- Initialize ---*/
