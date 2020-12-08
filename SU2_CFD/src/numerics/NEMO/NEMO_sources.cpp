@@ -38,11 +38,11 @@ CSource_NEMO::CSource_NEMO(unsigned short val_nDim,
 
   unsigned short iSpecies;
 
-  /*--- Allocate arrays ---*/
-  Y      = new su2double[nSpecies];
-
   ws.resize(nSpecies,0.0);
 
+  /*--- Allocate arrays ---*/
+  Y      = new su2double[nSpecies];
+  
   dYdr = new su2double*[nSpecies];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     dYdr[iSpecies] = new su2double[nSpecies];
@@ -59,7 +59,6 @@ CSource_NEMO::~CSource_NEMO(void) {
   unsigned short iSpecies;
 
   /*--- Deallocate arrays ---*/
-
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     delete [] dYdr[iSpecies];
   delete [] dYdr;

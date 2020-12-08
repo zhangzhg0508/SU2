@@ -910,6 +910,7 @@ void CUserDefinedTCLib::ChemistryJacobian(unsigned short iReaction, su2double *V
   /*--- Rxn rate derivatives ---*/
   for (ii = 0; ii < 3; ii++) {
     /*--- Products ---*/
+    //TODO REACTIONS WAS RxnMaps
     iSpecies = Reactions(iReaction,1,ii);
     if (iSpecies != nSpecies)
       betak[iSpecies]++;
