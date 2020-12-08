@@ -788,8 +788,7 @@ vector<su2double>& CUserDefinedTCLib::GetNetProductionRates(bool implicit, su2do
 
   /*--- Nonequilibrium chemistry ---*/
   unsigned short ii, iReaction;
-  su2double T_min, epsilon, Thf, Thb, Trxnf, Trxnb,
-  Keq, kf, kb, kfb, fwdRxn, bkwRxn, af, bf, ab, bb;
+  su2double Keq;
 
   /*--- Define artificial chemistry parameters ---*/
   // Note: These parameters artificially increase the rate-controlling reaction
@@ -864,14 +863,14 @@ vector<su2double>& CUserDefinedTCLib::GetNetProductionRates(bool implicit, su2do
     }
 
     if (implicit) {
-      ChemistryJacobian(V, val_jacobian);
+      ChemistryJacobian(iReaction, V, val_jacobian);
     }
   } //iReaction
 
   return ws;
 }
 
-void CUserDefinedTCLib::ChemistryJacobian(su2double *V, su2double **val_jacobian) {
+void CUserDefinedTCLib::ChemistryJacobian(unsigned short iReaction, su2double *V, su2double **val_jacobian) {
 
   unsigned short ii, iVar, jVar, iSpecies;
   unsigned short nVar = nSpecies+nDim+2;
@@ -895,28 +894,28 @@ void CUserDefinedTCLib::ChemistryJacobian(su2double *V, su2double **val_jacobian
   /*--- Fwd rate coefficient derivatives ---*/
   coeff = kf * (eta/Thf+theta/(Thf*Thf)) * dThf;
   for (iVar = 0; iVar < nVar; iVar++) {
-    dkf[iVar] = coeff * ( af*Trxnf/T*dTdU_i[iVar] +
-                          bf*Trxnf/Tve*dTvedU_i[iVar] );
+    dkf[iVar] = coeff * ( af*Trxnf/T*dTdU[iVar] +
+                          bf*Trxnf/Tve*dTvedU[iVar] );
   }
 
   /*--- Bkwd rate coefficient derivatives ---*/
   coeff = kb * (eta/Thb+theta/(Thb*Thb)) * dThb;
     for (iVar = 0; iVar < nVar; iVar++) {
-      dkb[iVar] = coeff*( ab*Trxnb/T*dTdU_i[iVar] + bb*Trxnb/Tve*dTvedU_i[iVar])
+      dkb[iVar] = coeff*( ab*Trxnb/T*dTdU[iVar] + bb*Trxnb/Tve*dTvedU[iVar])
                         - kb*((A[0]*Thb/1E4 - A[2] - A[3]*1E4/Thb
                         - 2*A[4]*(1E4/Thb)*(1E4/Thb))/Thb) * dThb *
-                        ( ab*Trxnb/T*dTdU_i[iVar] + bb*Trxnb/Tve*dTvedU_i[iVar]);
+                        ( ab*Trxnb/T*dTdU[iVar] + bb*Trxnb/Tve*dTvedU[iVar]);
     }
 
   /*--- Rxn rate derivatives ---*/
   for (ii = 0; ii < 3; ii++) {
     /*--- Products ---*/
-    iSpecies = RxnMap[iReaction][1][ii];
+    iSpecies = Reactions(iReaction,1,ii);
     if (iSpecies != nSpecies)
       betak[iSpecies]++;
 
     /*--- Reactants ---*/
-    iSpecies = RxnMap[iReaction][0][ii];
+    iSpecies = Reactions(iReaction,0,ii);
       if (iSpecies != nSpecies)
         alphak[iSpecies]++;
   }
@@ -925,61 +924,61 @@ void CUserDefinedTCLib::ChemistryJacobian(su2double *V, su2double **val_jacobian
 
     // Fwd
     dRfok[iSpecies] =  0.001*alphak[iSpecies]/MolarMass[iSpecies] *
-                       pow(0.001*U_i[iSpecies]/MolarMass[iSpecies],
+                       pow(0.001*rhos[iSpecies]/MolarMass[iSpecies],
                        max(0, alphak[iSpecies]-1));
 
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
       if (jSpecies != iSpecies)
-        dRfok[iSpecies] *= pow(0.001*U_i[jSpecies]/MolarMass[jSpecies],
+        dRfok[iSpecies] *= pow(0.001*rhos[jSpecies]/MolarMass[jSpecies],
                                                alphak[jSpecies]);
     dRfok[iSpecies] *= 1000.0;
 
     // Bkw
     dRbok[iSpecies] =  0.001*betak[iSpecies]/MolarMass[iSpecies] *
-                       pow(0.001*U_i[iSpecies]/MolarMass[iSpecies],
+                       pow(0.001*rhos[iSpecies]/MolarMass[iSpecies],
                        max(0, betak[iSpecies]-1));
 
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
       if (jSpecies != iSpecies)
-        dRbok[iSpecies] *= pow(0.001*U_i[jSpecies]/MolarMass[jSpecies],
+        dRbok[iSpecies] *= pow(0.001*rhos[jSpecies]/MolarMass[jSpecies],
                                                 betak[jSpecies]);
     dRbok[iSpecies] *= 1000.0;
   }
 
-  nEve = nSpecies+nDim+1;
+  unsigned short nEve = nSpecies+nDim+1;
   for (ii = 0; ii < 3; ii++) {
 
     /*--- Products ---*/
-    iSpecies = RxnMap[iReaction][1][ii];
+    iSpecies = Reactions(iReaction,1,ii);
     if (iSpecies != nSpecies) {
       for (iVar = 0; iVar < nVar; iVar++) {
         val_jacobian[iSpecies][iVar] += MolarMass[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar] -
                                                          dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]); //TODO * Volume;
         val_jacobian[nEve][iVar]     += MolarMass[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar] -
                                                          dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]) *
-                                                         eve_i[iSpecies];//TODO * Volume;
+                                                         eve[iSpecies];//TODO * Volume;
       }
 
       for (jVar = 0; jVar < nVar; jVar++) {
-        val_jacobian[nEve][jVar] += MolarMass[iSpecies] * (fwdRxn-bkwRxn)* Cvve_i[iSpecies] *
-                                                                      dTvedU_i[jVar];//TODO * Volume;
+        val_jacobian[nEve][jVar] += MolarMass[iSpecies] * (fwdRxn-bkwRxn)* cvve[iSpecies] *
+                                                                      dTvedU[jVar];//TODO * Volume;
       }
     }
 
     /*--- Reactants ---*/
-    iSpecies = RxnMap[iReaction][0][ii];
+    iSpecies = Reactions(iReaction,0,ii);
     if (iSpecies != nSpecies) {
       for (iVar = 0; iVar < nVar; iVar++) {
         val_jacobian[iSpecies][iVar] -= MolarMass[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar] -
                                                          dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]);//TODO * Volume;
         val_jacobian[nEve][iVar] -=     MolarMass[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar] -
                                                           dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]) *
-                                                          eve_i[iSpecies];//TODO * Volume;
+                                                          eve[iSpecies];//TODO * Volume;
       }
 
       for (jVar = 0; jVar < nVar; jVar++) {
-        val_jacobian[nEve][jVar] -= MolarMass[iSpecies] * (fwdRxn-bkwRxn) * Cvve_i[iSpecies] *
-                                                                     dTvedU_i[jVar];//TODO * Volume;
+        val_jacobian[nEve][jVar] -= MolarMass[iSpecies] * (fwdRxn-bkwRxn) * cvve[iSpecies] *
+                                                                     dTvedU[jVar];//TODO * Volume;
       }
     }
   } // ii
@@ -1043,12 +1042,13 @@ su2double CUserDefinedTCLib::GetEveSourceTerm(){
   // Note: Millikan & White relaxation time (requires P in Atm.)
   // Note: Park limiting cross section
   su2double conc, N, mu, A_sr, B_sr, num, denom, Cs, sig_s,
-  tau_sr, tauP, tauMW, taus, omegaVT, omegaCV;
-  vector<su2double> MolarFrac, eve_eq, eve;
+  tau_sr, tauP, tauMW,omegaVT, omegaCV;
+  vector<su2double> MolarFrac;
 
   MolarFrac.resize(nSpecies,0.0);
   eve_eq.resize(nSpecies,0.0);
   eve.resize(nSpecies,0.0);
+  taus.resize(nSpecies,0.0);
 
   omegaVT = 0.0;
   omegaCV = 0.0;
@@ -1091,11 +1091,11 @@ su2double CUserDefinedTCLib::GetEveSourceTerm(){
     tauP = 1/(sig_s*Cs*N);
 
     /*--- Species relaxation time ---*/
-    taus = tauMW + tauP;
+    taus[iSpecies] = tauMW + tauP;
 
     /*--- Add species contribution to residual ---*/
     omegaVT += rhos[iSpecies] * (eve_eq[iSpecies] -
-                                 eve[iSpecies]) / taus;
+                                 eve[iSpecies]) / taus[iSpecies];
   }
 
   /*--- Vibrational energy change due to chemical reactions ---*/
@@ -1115,25 +1115,28 @@ void CUserDefinedTCLib::GetEveSourceTermImplicit(su2double *V, su2double **val_j
   unsigned short iVar;	
   unsigned short nEv  = nSpecies+nDim+1;
   unsigned short nVar = nSpecies+nDim+2;
+  
+  cvve_eq.resize(nSpecies,0.0);
+  cvve.resize(nSpecies,0.0);
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
 
     /*--- Compute Cvvs ---*/
-    Cvvs_eq = GetSpeciesCvVibEle(T);
-    Cvve    = GetSpeciesCvVibEle(Tve);
+    cvve_eq = GetSpeciesCvVibEle(T);
+    cvve    = GetSpeciesCvVibEle(Tve);
 
     /*--- Compute Temperature gradients ---*/
     ComputedTdU(V,dTdU);
-    ComputedTvedU(V,dTvedU);
+    ComputedTvedU(V,eve,dTvedU);
 
     for (iVar = 0; iVar < nVar; iVar++) {
-      val_jacobian[nEv][iVar] += rhos/taus[iSpecies]*(Cvvs_eq[iSpecies]*dTdU[iVar] -
-                                                      Cvve[iSpecies]*dTvedU[iVar]);//TODO*Volume;
+      val_jacobian[nEv][iVar] += rhos[iSpecies]/taus[iSpecies]*(cvve_eq[iSpecies]*dTdU[iVar] -
+                                                      cvve[iSpecies]*dTvedU[iVar]);//TODO*Volume;
     }
     
 
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      val_jacobian[nEv][iSpecies] += (eve_eq[iSpecies]-eve[iSpecies])/taus;//TODO *Volume;
+      val_jacobian[nEv][iSpecies] += (eve_eq[iSpecies]-eve[iSpecies])/taus[iSpecies];//TODO *Volume;
 
   }
 }

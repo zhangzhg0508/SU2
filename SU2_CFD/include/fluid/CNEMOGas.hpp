@@ -130,7 +130,7 @@ public:
   /*!
    * \brief Populate chemical source term jacobian. 
    */
-  virtual void ChemistryJacobian(su2double *V, su2double **val_Jacobian);
+  virtual void ChemistryJacobian(unsigned short iReaction, su2double *V, su2double **val_Jacobian){};
 
   /*!
    * \brief Get vibrational energy source term.
@@ -140,7 +140,7 @@ public:
   /*!
    * \brief Get vibration enery source term jacobian.
    */
-   virtual void GetEveSourceTermImplicit(su2double *V, su2double **val_jacobian);
+   virtual void GetEveSourceTermImplicit(su2double *V, su2double **val_jacobian){};
 
   /*!
    * \brief Get vector of species V-E energy.

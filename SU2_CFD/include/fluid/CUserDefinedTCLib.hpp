@@ -72,6 +72,25 @@ private:
   C3DDoubleMatrix Omega00,       /*!< \brief Collision integrals (Omega(0,0)) */
   Omega11;                       /*!< \brief Collision integrals (Omega(1,1)) */
 
+  /*--- Implicit Variables *---*/
+  su2double              /*!< \brief Derivatives w.r.t. conservative variables */
+  *dPdU, *dTdU, *dTvedU;
+ 
+  su2double fwdRxn, bkwRxn,
+	    kf,kfb,kb,
+	    coeff, eta,epsilon, T_min,
+	    Trxnf, Trxnb,
+	    Thf, Thb, dThf, dThb,
+	    theta,af, bf,ab,bb; 
+  
+  vector<su2double>
+  dkf,
+  dkb, dRfok, dRbok,
+	  eve, eve_eq, cvve, cvve_eq,
+  taus;
+
+  vector<int>
+	  alphak,betak;
 public:
 
   /*!
@@ -125,7 +144,7 @@ public:
   /*!
    * \brief Populate chemical source term jacobian. 
    */
-  void ChemistryJacobian(su2double *V, su2double **val_Jacobian) final;
+  void ChemistryJacobian(unsigned short iReaction, su2double *V, su2double **val_Jacobian) final;
 
   /*!
    * \brief Get vibrational energy source term.
