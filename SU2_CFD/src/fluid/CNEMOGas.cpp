@@ -63,11 +63,11 @@ void CNEMOGas::SetTDStatePTTv(su2double val_pressure, const su2double *val_massf
 
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
     MassFrac[iSpecies] = val_massfrac[iSpecies];                   
-  Pressure = val_pressure;                   
-  T        = val_temperature;                
-  Tve      = val_temperature_ve; 
+  Pressure = val_pressure;
+  T        = val_temperature;
+  Tve      = val_temperature_ve;
   
-  denom   = 0.0;   
+  denom   = 0.0;
 
   /*--- Calculate mixture density from supplied primitive quantities ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)

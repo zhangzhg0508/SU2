@@ -73,20 +73,20 @@ private:
   Omega11;                       /*!< \brief Collision integrals (Omega(1,1)) */
 
   /*--- Implicit Variables *---*/
-  su2double              /*!< \brief Derivatives w.r.t. conservative variables */
+  su2double                     /*!< \brief Derivatives w.r.t. conservative variables */
   *dPdU, *dTdU, *dTvedU;
  
   su2double fwdRxn, bkwRxn,
-	    kf,kfb,kb,
-	    coeff, eta,epsilon, T_min,
-	    Trxnf, Trxnb,
-	    Thf, Thb, dThf, dThb,
-	    theta,af, bf,ab,bb; 
+	kf,kfb,kb,
+	coeff, eta, epsilon, T_min,
+	Trxnf, Trxnb,
+	Thf, Thb, dThf, dThb,
+	theta, af, bf, ab, bb;
   
   vector<su2double>
-  dkf,
-  dkb, dRfok, dRbok,
-	  eve, eve_eq, cvve, cvve_eq,
+  dkf, dkb,
+  dRfok, dRbok,
+	eve, eve_eq, cvve, cvve_eq,
   taus;
 
   vector<int>
@@ -234,7 +234,7 @@ public:
   /*!
    * \brief Get species formation enthalpy.
    */
-  vector<su2double>& GetSpeciesFormationEnthalpy() final { return Enthalpy_Formation; }  
+  vector<su2double>& GetSpeciesFormationEnthalpy() final { return Enthalpy_Formation; }
 
   };
 

@@ -40,7 +40,7 @@ class CSource_NEMO : public CNEMONumerics {
 private:
  
   su2double *Y, **dYdr;                  // Mass fraction
-  vector<su2double> ws; 
+  vector<su2double> ws;
 
   su2double*  residual = nullptr;        /*!< \brief The source residual. */
   su2double** jacobian = nullptr;

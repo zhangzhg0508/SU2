@@ -245,5 +245,5 @@ public:
   /*!
    * \brief Get species formation enthalpy.
    */
-  virtual const vector<su2double>& GetSpeciesFormationEnthalpy() = 0;  
+  virtual const vector<su2double>& GetSpeciesFormationEnthalpy() = 0;
 };
