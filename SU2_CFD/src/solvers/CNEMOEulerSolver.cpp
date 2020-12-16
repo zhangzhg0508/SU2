@@ -1074,6 +1074,24 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
           /*--- Set gradient of auxillary variables ---*/
           numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
 
+          /*--- Set diffusion coefficient ---*/
+          numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint), nodes->GetDiffusionCoeff(iPoint));
+
+          /*--- Laminar viscosity ---*/
+          numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint), nodes->GetLaminarViscosity(iPoint));
+
+          /*--- Eddy viscosity ---*/
+          numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint), nodes->GetEddyViscosity(iPoint));
+
+          /*--- Thermal conductivity ---*/
+          numerics->SetThermalConductivity(nodes->GetThermalConductivity(iPoint), nodes->GetThermalConductivity(iPoint));
+
+          /*--- Vib-el. thermal conductivity ---*/
+          numerics->SetThermalConductivity_ve(nodes->GetThermalConductivity_ve(iPoint), nodes->GetThermalConductivity_ve(iPoint));
+
+          /*--- Vib-el energy ---*/          
+          numerics->SetEve(nodes->GetEve(iPoint), nodes->GetEve(iPoint));
+
           /*--- Set turbulence kinetic energy ---*/
           if (rans){
             CVariable* turbNodes = solver_container[TURB_SOL]->GetNodes();
