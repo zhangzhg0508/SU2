@@ -989,6 +989,8 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
   bool frozen     = config->GetFrozen();
   bool monoatomic = config->GetMonoatomic();
   bool viscous    = config->GetViscous();
+  bool ideal_gas  = (config->GetKind_FluidModel() == STANDARD_AIR) || (config->GetKind_FluidModel() == IDEAL_GAS);
+  bool rans       = (config->GetKind_Turb_Model() != NONE);
 
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
 
@@ -1021,27 +1023,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
 
     /*--- Compute axisymmetric source terms (if needed) ---*/
     if (config->GetAxisymmetric()) {
-      auto residual = numerics->ComputeAxisymmetric(config);
 
-      /*--- Check for errors before applying source to the linear system ---*/
-      err = false;
-      for (iVar = 0; iVar < nVar; iVar++)
-        if (residual[iVar] != residual[iVar]) err = true;
-      if (implicit)
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (jVar = 0; jVar < nVar; jVar++)
-            if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
-
-      /*--- Apply the update to the linear system ---*/
-      if (!err) {
-        LinSysRes.AddBlock(iPoint, residual);
-        if (implicit)
-          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      }
-      else
-        eAxi_local++;
-
-    /*--- For viscous problems, we need an additional gradient. ---*/
       if (viscous) {
 
         for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -1066,8 +1048,69 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
         if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
           SetAuxVar_Gradient_LS(geometry, config);
         }
-
       }
+
+      /*--- loop over points ---*/
+      SU2_OMP_FOR_DYN(omp_chunk_size)
+      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+        /*--- Set solution  ---*/
+        numerics->SetConservative(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
+
+        /*--- Set control volume ---*/
+        numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+
+        /*--- Set y coordinate ---*/
+        numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
+
+        /*--- Set primitive variables for viscous terms and/or generalised source ---*/
+        numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(iPoint));
+
+        if (viscous) {
+
+          /*--- Set gradient of primitive variables ---*/
+          numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
+
+          /*--- Set gradient of auxillary variables ---*/
+          numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
+
+          /*--- Set turbulence kinetic energy ---*/
+          if (rans){
+            CVariable* turbNodes = solver_container[TURB_SOL]->GetNodes();
+            numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0), turbNodes->GetSolution(iPoint,0));
+          }
+        }
+
+        //*--- Compute Source term Residual ---*/
+        //auto residual = numerics->ComputeResidual(config);
+
+        /*--- Add Residual ---*/
+        //LinSysRes.AddBlock(iPoint, residual);
+
+        /*--- Implicit part ---*/
+        //if (implicit)
+          //Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+      }
+      
+      auto residual = numerics->ComputeAxisymmetric(config);
+
+      /*--- Check for errors before applying source to the linear system ---*/
+      err = false;
+      for (iVar = 0; iVar < nVar; iVar++)
+        if (residual[iVar] != residual[iVar]) err = true;
+      if (implicit)
+        for (iVar = 0; iVar < nVar; iVar++)
+          for (jVar = 0; jVar < nVar; jVar++)
+            if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
+
+      /*--- Apply the update to the linear system ---*/
+      if (!err) {
+        LinSysRes.AddBlock(iPoint, residual);
+        if (implicit)
+          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      }
+      else
+        eAxi_local++;
     }
 
     if(!monoatomic){

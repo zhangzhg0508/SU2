@@ -344,47 +344,51 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
 
     if (viscous) {
 
-    if (!rans){ turb_ke_i = 0.0; }
-    su2double laminar_viscosity_i       = Laminar_Viscosity_i;
-    su2double eddy_viscosity_i          = Eddy_Viscosity_i;
-    su2double thermal_conductivity_i    = Thermal_Conductivity_i;
-    su2double thermal_conductivity_ve_i = Thermal_Conductivity_ve_i;
-    su2double total_rho                 = V_i[RHO_INDEX];
+        if (!rans){ turb_ke_i = 0.0; }
 
-    for (iSpecies=0;iSpecies<nSpecies;iSpecies++)
-      Mass += V_i[iSpecies]*Ms[iSpecies];
+        su2double laminar_viscosity_i       = Laminar_Viscosity_i;
+        su2double eddy_viscosity_i          = Eddy_Viscosity_i;
+        su2double thermal_conductivity_i    = Thermal_Conductivity_i;
+        su2double thermal_conductivity_ve_i = Thermal_Conductivity_ve_i;
+        su2double total_rho                 = V_i[RHO_INDEX];
 
-    su2double heat_capacity_cp_i = V_i[RHOCVTR_INDEX]+Ru/Mass;
+        for (iSpecies=0;iSpecies<nSpecies;iSpecies++)
+          Mass += V_i[iSpecies]*Ms[iSpecies];
 
-    su2double total_viscosity_i = laminar_viscosity_i + eddy_viscosity_i;
-    su2double total_conductivity_i = thermal_conductivity_i + thermal_conductivity_ve_i + heat_capacity_cp_i*eddy_viscosity_i/Prandtl_Turb;
-  
-    su2double u = V_i[nSpecies+2];
-    su2double v = V_i[nSpecies+3];
+        su2double heat_capacity_cp_i = V_i[RHOCVTR_INDEX]+Ru/Mass;
 
-    qy_ve = kve*GV[TVE_INDEX][1];
+        su2double total_viscosity_i = laminar_viscosity_i + eddy_viscosity_i;
+        su2double total_conductivity_i = thermal_conductivity_i + thermal_conductivity_ve_i + heat_capacity_cp_i*eddy_viscosity_i/Prandtl_Turb;
+      
+        su2double u = V_i[nSpecies+2];
+        su2double v = V_i[nSpecies+3];
 
-      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) { 
-        sumJhs_y += (rho*Diffusion_Coeff_i[iSpecies]*GV[RHOS_INDEX+iSpecies][1]
-        - V_i[RHOS_INDEX+iSpecies]*Vector[1]) * hs[iSpecies];
+        qy_ve = kve*GV[TVE_INDEX][1];
 
-        sumJeve_y += (rho*Diffusion_Coeff_i[iSpecies]*GV[RHOS_INDEX+iSpecies][1]
-        - V_i[RHOS_INDEX+iSpecies]*Vector[1]) * eve_i[iSpecies];
-      }
+          for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) { 
+            sumJhs_y += (rho*Diffusion_Coeff_i[iSpecies]*GV[RHOS_INDEX+iSpecies][1]
+            - V_i[RHOS_INDEX+iSpecies]*Vector[1]) * hs[iSpecies];
 
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      residual[iSpecies] -= 0.0;
+            sumJeve_y += (rho*Diffusion_Coeff_i[iSpecies]*GV[RHOS_INDEX+iSpecies][1]
+            - V_i[RHOS_INDEX+iSpecies]*Vector[1]) * eve_i[iSpecies];
+          }
 
-    residual[nSpecies] -= Volume*(yinv*total_viscosity_i*(PrimVar_Grad_i[nSpecies+2][1]+PrimVar_Grad_i[nSpecies+3][0]) 
-                                                                -TWO3*AuxVar_Grad_i[nSpecies+1][0]);
-    residual[nSpecies+1] -= Volume*(yinv*total_viscosity_i*2*(PrimVar_Grad_i[nSpecies+3][1]-v*yinv)
-                                                                -TWO3*AuxVar_Grad_i[nSpecies+2][1]);
-    residual[nSpecies+2] -= Volume*(yinv*(- sumJhs_y + total_viscosity_i*(u*(PrimVar_Grad_i[nSpecies+3][0]+PrimVar_Grad_i[nSpecies+2][1])
-                                                 +v*TWO3*(2*PrimVar_Grad_i[nSpecies+2][1]-PrimVar_Grad_i[nSpecies+2][0]
-                                                 -v*yinv+total_rho*turb_ke_i))
-                                                 -total_conductivity_i*PrimVar_Grad_i[nSpecies+1][1])
-                                                 -TWO3*(AuxVar_Grad_i[nSpecies+2][1]+AuxVar_Grad_i[nSpecies+3][1]));
-    residual[nSpecies+3] -= Volume*(yinv*(-sumJeve_y -qy_ve));
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+          residual[iSpecies] -= 0.0;
+
+          residual[nSpecies] -= Volume*(yinv*total_viscosity_i*(PrimVar_Grad_i[nSpecies+2][1]+PrimVar_Grad_i[nSpecies+3][0]) 
+                                                                    -TWO3*AuxVar_Grad_i[nSpecies+1][0]);
+
+          residual[nSpecies+1] -= Volume*(yinv*total_viscosity_i*2*(PrimVar_Grad_i[nSpecies+3][1]-v*yinv)
+                                                                    -TWO3*AuxVar_Grad_i[nSpecies+2][1]);
+
+          residual[nSpecies+2] -= Volume*(yinv*(- sumJhs_y + total_viscosity_i*(u*(PrimVar_Grad_i[nSpecies+3][0]+PrimVar_Grad_i[nSpecies+2][1])
+                                                     +v*TWO3*(2*PrimVar_Grad_i[nSpecies+2][1]-PrimVar_Grad_i[nSpecies+2][0]
+                                                     -v*yinv+total_rho*turb_ke_i))
+                                                     -total_conductivity_i*PrimVar_Grad_i[nSpecies+1][1])
+                                                     -TWO3*(AuxVar_Grad_i[nSpecies+2][1]+AuxVar_Grad_i[nSpecies+3][1]));
+
+          residual[nSpecies+3] -= Volume*(yinv*(-sumJeve_y -qy_ve));
   }
 
 //  if (implicit) {
