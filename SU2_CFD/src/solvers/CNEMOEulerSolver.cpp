@@ -1108,27 +1108,29 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
         /*--- Implicit part ---*/
         //if (implicit)
           //Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-      }
-      
-      auto residual = numerics->ComputeAxisymmetric(config);
 
-      /*--- Check for errors before applying source to the linear system ---*/
-      err = false;
-      for (iVar = 0; iVar < nVar; iVar++)
-        if (residual[iVar] != residual[iVar]) err = true;
-      if (implicit)
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (jVar = 0; jVar < nVar; jVar++)
-            if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
+              
+          auto residual = numerics->ComputeAxisymmetric(config);
 
-      /*--- Apply the update to the linear system ---*/
-      if (!err) {
-        LinSysRes.AddBlock(iPoint, residual);
-        if (implicit)
-          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+          /*--- Check for errors before applying source to the linear system ---*/
+          err = false;
+          for (iVar = 0; iVar < nVar; iVar++)
+            if (residual[iVar] != residual[iVar]) err = true;
+          if (implicit)
+            for (iVar = 0; iVar < nVar; iVar++)
+              for (jVar = 0; jVar < nVar; jVar++)
+                if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
+
+          /*--- Apply the update to the linear system ---*/
+          if (!err) {
+            LinSysRes.AddBlock(iPoint, residual);
+            if (implicit)
+              Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+          }
+          else
+            eAxi_local++;
       }
-      else
-        eAxi_local++;
+
     }
 
     if(!monoatomic){
