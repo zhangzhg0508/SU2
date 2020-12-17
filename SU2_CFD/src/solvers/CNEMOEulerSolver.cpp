@@ -1099,17 +1099,6 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
           }
         }
 
-        //*--- Compute Source term Residual ---*/
-        //auto residual = numerics->ComputeResidual(config);
-
-        /*--- Add Residual ---*/
-        //LinSysRes.AddBlock(iPoint, residual);
-
-        /*--- Implicit part ---*/
-        //if (implicit)
-          //Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-
-              
           auto residual = numerics->ComputeAxisymmetric(config);
 
           /*--- Check for errors before applying source to the linear system ---*/
