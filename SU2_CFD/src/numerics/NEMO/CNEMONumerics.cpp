@@ -41,17 +41,17 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
 
     hs.resize(nSpecies,0.0);
 
-    RHOS_INDEX    = 0; 
-    T_INDEX       = nSpecies;
-    TVE_INDEX     = nSpecies+1;
-    VEL_INDEX     = nSpecies+2;
-    P_INDEX       = nSpecies+nDim+2;
-    RHO_INDEX     = nSpecies+nDim+3;
-    H_INDEX       = nSpecies+nDim+4;
-    A_INDEX       = nSpecies+nDim+5;
-    RHOCVTR_INDEX = nSpecies+nDim+6;
-    RHOCVVE_INDEX = nSpecies+nDim+7;  
-    LAM_VISC_INDEX = nSpecies+nDim+8;
+    RHOS_INDEX      = 0;
+    T_INDEX         = nSpecies;
+    TVE_INDEX       = nSpecies+1;
+    VEL_INDEX       = nSpecies+2;
+    P_INDEX         = nSpecies+nDim+2;
+    RHO_INDEX       = nSpecies+nDim+3;
+    H_INDEX         = nSpecies+nDim+4;
+    A_INDEX         = nSpecies+nDim+5;
+    RHOCVTR_INDEX   = nSpecies+nDim+6;
+    RHOCVVE_INDEX   = nSpecies+nDim+7;
+    LAM_VISC_INDEX  = nSpecies+nDim+8;
     EDDY_VISC_INDEX = nSpecies+nDim+9;
 
     /*--- Read from CConfig ---*/
@@ -78,7 +78,6 @@ CNEMONumerics::~CNEMONumerics(void) {
   delete fluidmodel;
 }
 
-
 void CNEMONumerics::GetInviscidProjFlux(const su2double *val_U,
                                         const su2double *val_V,
                                         const su2double *val_normal,
@@ -99,7 +98,7 @@ void CNEMONumerics::GetInviscidProjFlux(const su2double *val_U,
   P      = val_V[P_INDEX];
   H      = val_V[H_INDEX];
   rhoEve = val_U[nSpecies+nDim+1];
-  rhos = &val_V[RHOS_INDEX];
+  rhos   = &val_V[RHOS_INDEX];
 
   if (nDim == 2) {
 
@@ -237,7 +236,7 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   // rather than the standard V = [r1, ... , rn, T, Tve, ... ]
 
   unsigned short iSpecies, iVar, iDim, jDim;
-  su2double *Ds, *V, **GV, mu, ktr, kve, div_vel;
+  su2double *Ds, *V, **GV, mu, ktr, kve;
   su2double rho, T, Tve, RuSI, Ru;
   auto& Ms = fluidmodel->GetSpeciesMolarMass();
 
@@ -261,7 +260,7 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   RuSI = UNIVERSAL_GAS_CONSTANT;
   Ru   = 1000.0*RuSI;
 
-  hs = fluidmodel->GetSpeciesEnthalpy(T, Tve, val_eve);
+  hs = fluidmodel->ComputeSpeciesEnthalpy(T, Tve, val_eve);
   
   /*--- Scale thermal conductivity with turb visc ---*/
   // TODO: Need to determine proper way to incorporate eddy viscosity
@@ -278,11 +277,6 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   //Cpve = V[RHOCVVE_INDEX]+Ru/Mass;
   //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
 
-  /*--- Calculate the velocity divergence ---*/
-  div_vel = 0.0;
-  for (iDim = 0 ; iDim < nDim; iDim++)
-    div_vel += GV[VEL_INDEX+iDim][iDim];
-
   /*--- Pre-compute mixture quantities ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
     Vector[iDim] = 0.0;
@@ -292,16 +286,7 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   }
 
   /*--- Compute the viscous stress tensor ---*/
-  for (iDim = 0; iDim < nDim; iDim++)
-    for (jDim = 0; jDim < nDim; jDim++)
-      tau[iDim][jDim] = 0.0;
-  for (iDim = 0 ; iDim < nDim; iDim++) {
-    for (jDim = 0 ; jDim < nDim; jDim++) {
-      tau[iDim][jDim] += mu * (val_gradprimvar[VEL_INDEX+jDim][iDim] +
-          val_gradprimvar[VEL_INDEX+iDim][jDim]);
-    }
-    tau[iDim][iDim] -= TWO3*mu*div_vel;
-  }
+  ComputeStressTensor(nDim,tau,val_gradprimvar+VEL_INDEX, mu);
 
   /*--- Populate entries in the viscous flux vector ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -670,8 +655,8 @@ void CNEMONumerics::GetPMatrix(const su2double *U, const su2double *V, const su2
 
       val_p_tensor[nSpecies][iSpecies]   += V[VEL_INDEX]   / a2;
       val_p_tensor[nSpecies+1][iSpecies] += V[VEL_INDEX+1] / a2;
-      val_p_tensor[nSpecies+2][iSpecies] += (val_dPdU[nSpecies+nDim]*sqvel-val_dPdU[iSpecies])
-          / (val_dPdU[nSpecies+nDim]*a2);
+      val_p_tensor[nSpecies+2][iSpecies] += (val_dPdU[nSpecies+nDim]*sqvel-val_dPdU[iSpecies]) /
+                                            (val_dPdU[nSpecies+nDim]*a2);
       val_p_tensor[nSpecies+3][iSpecies] += 0.0;
     }
 
@@ -691,8 +676,8 @@ void CNEMONumerics::GetPMatrix(const su2double *U, const su2double *V, const su2
     val_p_tensor[nSpecies+3][nSpecies+1] += eve / (2.0*a2);
     val_p_tensor[nSpecies+3][nSpecies+2] += eve / (2.0*a2);
     val_p_tensor[nSpecies+3][nSpecies+3] += 1.0 / a2;
-  }
-  else {
+
+  } else {
 
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
       val_p_tensor[iSpecies][iSpecies]   = 1.0/a2;

@@ -100,7 +100,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeChemistry(const CConfig *config) 
 
   /*--- Set mixture state ---*/
   fluidmodel->SetTDStateRhosTTv(rhos, T, Tve);
-  ws = fluidmodel->GetNetProductionRates(implicit, V_i, jacobian);
+  ws = fluidmodel->ComputeNetProductionRates(implicit, V_i, jacobian);
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
     residual[iSpecies] = ws[iSpecies] *Volume;
@@ -168,7 +168,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
   unsigned short iDim, iSpecies, jSpecies, iVar, jVar;
   su2double rho, rhou, rhov, rhoEve, vel2, H, yinv;
 
-    /*--- Initialize residual and Jacobian arrays ---*/
+  /*--- Initialize residual and Jacobian arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     residual[iVar] = 0.0;
   }

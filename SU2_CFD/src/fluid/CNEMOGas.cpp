@@ -131,15 +131,34 @@ su2double CNEMOGas::ComputeGasConstant(){
   return GasConstant;
 }
 
-su2double CNEMOGas::GetrhoCvve() {
+su2double CNEMOGas::ComputeGamma(){
 
-    Cvves = GetSpeciesCvVibEle(Tve);
+  Cvves = ComputeSpeciesCvVibEle(Tve);
 
-    rhoCvve = 0.0;
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      rhoCvve += rhos[iSpecies]*Cvves[iSpecies];
+  /*--- Extract Values ---*/
+  rhoCvtr = ComputerhoCvtr();
+  rhoCvve = ComputerhoCvve();
 
-    return rhoCvve;
+  /*--- Gamma Computation ---*/
+  su2double rhoR = 0.0;
+  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    rhoR += rhos[iSpecies]*Ru/MolarMass[iSpecies];
+
+  gamma = rhoR/(rhoCvtr+rhoCvve)+1;
+
+  return gamma;
+
+}
+
+su2double CNEMOGas::ComputerhoCvve() {
+
+  Cvves = ComputeSpeciesCvVibEle();
+
+  rhoCvve = 0.0;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    rhoCvve += rhos[iSpecies]*Cvves[iSpecies];
+
+  return rhoCvve;
 }
 
 void CNEMOGas::ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU){
