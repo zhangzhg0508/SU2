@@ -38,17 +38,11 @@ CSource_NEMO::CSource_NEMO(unsigned short val_nDim,
 
   unsigned short iSpecies;
 
-  /*--- Allocate arrays ---*/
-  alphak = new int[nSpecies];
-  betak  = new int[nSpecies];
-  Y      = new su2double[nSpecies];
-  dkf    = new su2double[nVar];
-  dkb    = new su2double[nVar];
-  dRfok  = new su2double[nVar];
-  dRbok  = new su2double[nVar];
-
   ws.resize(nSpecies,0.0);
 
+  /*--- Allocate arrays ---*/
+  Y      = new su2double[nSpecies];
+  
   dYdr = new su2double*[nSpecies];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     dYdr[iSpecies] = new su2double[nSpecies];
@@ -65,18 +59,10 @@ CSource_NEMO::~CSource_NEMO(void) {
   unsigned short iSpecies;
 
   /*--- Deallocate arrays ---*/
-
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     delete [] dYdr[iSpecies];
   delete [] dYdr;
-
   delete [] Y;
-  delete [] alphak;
-  delete [] betak;
-  delete [] dkf;
-  delete [] dkb;
-  delete [] dRfok;
-  delete [] dRbok;
 
   delete [] residual;
   if (jacobian){
@@ -114,7 +100,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeChemistry(const CConfig *config) 
 
   /*--- Set mixture state ---*/
   fluidmodel->SetTDStateRhosTTv(rhos, T, Tve);
-  ws = fluidmodel->GetNetProductionRates(implicit, jacobian);
+  ws = fluidmodel->GetNetProductionRates(implicit, V_i, jacobian);
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
     residual[iSpecies] = ws[iSpecies] *Volume;
@@ -164,7 +150,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
   /*--- Compute residual and jacobians ---*/
   VTterm = fluidmodel -> GetEveSourceTerm();
   if (implicit) 
-    fluidmodel->GetEveSourceTermImplicit(jacobian, V_i);
+    fluidmodel->GetEveSourceTermImplicit(V_i, jacobian);
   
   residual[nSpecies+nDim+1] = VTterm * Volume;
 
@@ -223,7 +209,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
    /*--- Calculate additional quantities ---*/
    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-       dYdr[iSpecies][jSpecies] += -1/rho*Ys[iSpecies];
+       dYdr[iSpecies][jSpecies] += -1/rho*Y[iSpecies];
      }
      dYdr[iSpecies][iSpecies] += 1/rho;
    }
@@ -241,7 +227,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
    // X-momentum
    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
      jacobian[nSpecies][iSpecies] = -rhou*rhov/(rho*rho);
-   jacobian[nSpecies][nSpecies] = rhov/rho;
+   jacobian[nSpecies][nSpecies]   = rhov/rho;
    jacobian[nSpecies][nSpecies+1] = rhou/rho;
 
    // Y-momentum

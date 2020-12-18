@@ -50,7 +50,7 @@ private:
   ArrheniusEta,                     /*!< \brief Arrhenius reaction temperature exponent */
   ArrheniusTheta,                   /*!< \brief Arrhenius reaction characteristic temperature */
   CharVibTemp,                      /*!< \brief Characteristic vibrational temperature for e_vib */
-  RotationModes,	          /*!< \brief Rotational modes of energy storage */
+  RotationModes,	                /*!< \brief Rotational modes of energy storage */
   Tcf_a,                          /*!< \brief Rate controlling temperature exponent (fwd) */
   Tcf_b,                          /*!< \brief Rate controlling temperature exponent (fwd) */
   Tcb_a,                          /*!< \brief Rate controlling temperature exponent (bkw) */
@@ -71,6 +71,26 @@ private:
   
   C3DDoubleMatrix Omega00,       /*!< \brief Collision integrals (Omega(0,0)) */
   Omega11;                       /*!< \brief Collision integrals (Omega(1,1)) */
+
+  /*--- Implicit Variables *---*/
+  su2double                     /*!< \brief Derivatives w.r.t. conservative variables */
+  *dPdU, *dTdU, *dTvedU;
+ 
+  su2double fwdRxn, bkwRxn,
+	kf,kfb,kb,
+	coeff, eta, epsilon, T_min,
+	Trxnf, Trxnb,
+	Thf, Thb, dThf, dThb,
+	theta, af, bf, ab, bb;
+  
+  vector<su2double>
+  dkf, dkb,
+  dRfok, dRbok,
+	eve, eve_eq, cvve, cvve_eq,
+  taus;
+
+  vector<int>
+  alphak, betak;
 
 public:
 
@@ -105,7 +125,7 @@ public:
   /*!
    * \brief Get species V-E specific heats at constant volume.
    */
-  vector<su2double>& GetSpeciesCvVibEle() final;
+  vector<su2double>& GetSpeciesCvVibEle(su2double val_T) final;
 
   /*!
    * \brief Get mixture energies (total internal energy and vibrational energy).
@@ -120,12 +140,12 @@ public:
   /*!
    * \brief Get species net production rates.
    */
-  vector<su2double>& GetNetProductionRates(bool impicit = false; su2double *V = nullptr; su2double **val_Jacobian) final;
+  vector<su2double>& GetNetProductionRates(bool implicit, su2double *V, su2double **val_Jacobian) final;
 
   /*!
    * \brief Populate chemical source term jacobian. 
    */
-  void ChemistryJacobian(su2double *V; su2double **val_Jacobian) final;
+  void ChemistryJacobian(unsigned short iReaction, su2double *V, su2double **val_Jacobian) final;
 
   /*!
    * \brief Get vibrational energy source term.
@@ -214,7 +234,7 @@ public:
   /*!
    * \brief Get species formation enthalpy.
    */
-  vector<su2double>& GetSpeciesFormationEnthalpy() final { return Enthalpy_Formation; }  
+  vector<su2double>& GetSpeciesFormationEnthalpy() final { return Enthalpy_Formation; }
 
   };
 

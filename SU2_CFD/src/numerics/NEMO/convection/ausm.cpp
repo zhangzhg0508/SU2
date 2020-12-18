@@ -30,8 +30,9 @@
 CUpwAUSM_NEMO::CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar, 
                              unsigned short val_nPrimVar,
                              unsigned short val_nPrimVarGrad, 
-                             CConfig *config) : CNEMONumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad,
-                                                          config) {
+                             CConfig *config) : CNEMONumerics(val_nDim, val_nVar, 
+                                                              val_nPrimVar, val_nPrimVarGrad,
+                                                              config) {
 
   FcL    = new su2double [nVar];
   FcR    = new su2double [nVar];
@@ -45,7 +46,12 @@ CUpwAUSM_NEMO::CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar,
   u_j    = new su2double [nDim];
 
   Flux   = new su2double[nVar];
-
+  Jacobian_i = new su2double* [nVar];
+  Jacobian_j = new su2double* [nVar];
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Jacobian_i[iVar] = new su2double [nVar];
+    Jacobian_j[iVar] = new su2double [nVar];
+  }
 }
 
 CUpwAUSM_NEMO::~CUpwAUSM_NEMO(void) {
@@ -61,13 +67,21 @@ CUpwAUSM_NEMO::~CUpwAUSM_NEMO(void) {
   delete [] u_i;
   delete [] u_j;
   delete [] Flux;
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    delete [] Jacobian_i[iVar];
+    delete [] Jacobian_j[iVar];
+  }
+  delete [] Jacobian_i;
+  delete [] Jacobian_j;
 }
 
 CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) {
 
-  unsigned short iDim, iVar, iSpecies;
+  unsigned short iDim, iVar, jVar, iSpecies;
   su2double rho_i, rho_j, 
   e_ve_i, e_ve_j, mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
+
+  su2double Ru; 
 
   /*--- Compute geometric quantities ---*/
   Area = 0;
@@ -152,11 +166,17 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
 
   if (implicit){
 
+     auto& Ms = fluidmodel->GetSpeciesMolarMass();
+     Cvtr     = fluidmodel->GetSpeciesCvTraRot();
+     Ru       = 1000.0*UNIVERSAL_GAS_CONSTANT;
+     rhoCvtr_i = V_i[RHOCVTR_INDEX];
+     rhoCvtr_j = V_j[RHOCVTR_INDEX];
+
     /*--- Initialize the Jacobians ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_i[iVar][jVar] = 0.0;
-        val_Jacobian_j[iVar][jVar] = 0.0;
+        Jacobian_i[iVar][jVar] = 0.0;
+        Jacobian_j[iVar][jVar] = 0.0;
       }
     }
 
@@ -165,10 +185,9 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
 
     /*--- Sound speed derivatives: Species density ---*/
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-      Cvtrs = (3.0/2.0+xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
-      daL[iSpecies] = 1.0/(2.0*a_i) * (1/rhoCvtr_i*(Ru/Ms[iSpecies] - Cvtrs*dPdU_i[nSpecies+nDim])*P_i/rho_i
+      daL[iSpecies] = 1.0/(2.0*a_i) * (1/rhoCvtr_i*(Ru/Ms[iSpecies] - Cvtr[iSpecies]*dPdU_i[nSpecies+nDim])*P_i/rho_i
                     + 1.0/rho_i*(1.0+dPdU_i[nSpecies+nDim])*(dPdU_i[iSpecies] - P_i/rho_i));
-      daR[iSpecies] = 1.0/(2.0*a_j) * (1/rhoCvtr_j*(Ru/Ms[iSpecies] - Cvtrs*dPdU_j[nSpecies+nDim])*P_j/rho_j
+      daR[iSpecies] = 1.0/(2.0*a_j) * (1/rhoCvtr_j*(Ru/Ms[iSpecies] - Cvtr[iSpecies]*dPdU_j[nSpecies+nDim])*P_j/rho_j
                     + 1.0/rho_j*(1.0+dPdU_j[nSpecies+nDim])*(dPdU_j[iSpecies] - P_j/rho_j));
     }
     for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
@@ -196,22 +215,22 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
       /*--- Jacobian contribution: dFc terms ---*/
       for (iVar = 0; iVar < nSpecies+nDim; iVar++) {
         for (jVar = 0; jVar < nVar; jVar++) {
-          val_Jacobian_i[iVar][jVar] += mF * FcL[iVar]/a_i * daL[jVar];
+          Jacobian_i[iVar][jVar] += mF * FcL[iVar]/a_i * daL[jVar];
         }
-        val_Jacobian_i[iVar][iVar] += mF * a_i;
+        Jacobian_i[iVar][iVar] += mF * a_i;
       }
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        val_Jacobian_i[nSpecies+nDim][iSpecies] += mF * (dPdU_i[iSpecies]*a_i + rho_i*h_i*daL[iSpecies]);
+        Jacobian_i[nSpecies+nDim][iSpecies] += mF * (dPdU_i[iSpecies]*a_i + rho_i*h_i*daL[iSpecies]);
       }
       for (iDim = 0; iDim < nDim; iDim++) {
-        val_Jacobian_i[nSpecies+nDim][nSpecies+iDim] += mF * (-dPdU_i[nSpecies+nDim]*u_i[iDim]*a_i + rho_i*h_i*daL[nSpecies+iDim]);
+        Jacobian_i[nSpecies+nDim][nSpecies+iDim] += mF * (-dPdU_i[nSpecies+nDim]*u_i[iDim]*a_i + rho_i*h_i*daL[nSpecies+iDim]);
       }
-      val_Jacobian_i[nSpecies+nDim][nSpecies+nDim]   += mF * ((1.0+dPdU_i[nSpecies+nDim])*a_i + rho_i*h_i*daL[nSpecies+nDim]);
-      val_Jacobian_i[nSpecies+nDim][nSpecies+nDim+1] += mF * (dPdU_i[nSpecies+nDim+1]*a_i + rho_i*h_i*daL[nSpecies+nDim+1]);
+      Jacobian_i[nSpecies+nDim][nSpecies+nDim]   += mF * ((1.0+dPdU_i[nSpecies+nDim])*a_i + rho_i*h_i*daL[nSpecies+nDim]);
+      Jacobian_i[nSpecies+nDim][nSpecies+nDim+1] += mF * (dPdU_i[nSpecies+nDim+1]*a_i + rho_i*h_i*daL[nSpecies+nDim+1]);
       for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_i[nSpecies+nDim+1][jVar] +=  mF * FcL[nSpecies+nDim+1]/a_i * daL[jVar];
+        Jacobian_i[nSpecies+nDim+1][jVar] +=  mF * FcL[nSpecies+nDim+1]/a_i * daL[jVar];
       }
-      val_Jacobian_i[nSpecies+nDim+1][nSpecies+nDim+1] += mF * a_i;
+      Jacobian_i[nSpecies+nDim+1][nSpecies+nDim+1] += mF * a_i;
     }
 
     /*--- Calculate derivatives of the split pressure flux ---*/
@@ -261,14 +280,14 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
       /*--- dM contribution ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
         for (jVar = 0; jVar < nVar; jVar++) {
-          val_Jacobian_i[iVar][jVar] += dmLP[jVar]*FcLR[iVar];
+          Jacobian_i[iVar][jVar] += dmLP[jVar]*FcLR[iVar];
         }
       }
 
       /*--- Jacobian contribution: dP terms ---*/
       for (iDim = 0; iDim < nDim; iDim++) {
         for (iVar = 0; iVar < nVar; iVar++) {
-          val_Jacobian_i[nSpecies+iDim][iVar] += dpLP[iVar]*UnitNormal[iDim];
+          Jacobian_i[nSpecies+iDim][iVar] += dpLP[iVar]*UnitNormal[iDim];
         }
       }
     }
@@ -279,22 +298,22 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
       /*--- Jacobian contribution: dFc terms ---*/
       for (iVar = 0; iVar < nSpecies+nDim; iVar++) {
         for (jVar = 0; jVar < nVar; jVar++) {
-          val_Jacobian_j[iVar][jVar] += mF * FcR[iVar]/a_j * daR[jVar];
+          Jacobian_j[iVar][jVar] += mF * FcR[iVar]/a_j * daR[jVar];
         }
-        val_Jacobian_j[iVar][iVar] += mF * a_j;
+        Jacobian_j[iVar][iVar] += mF * a_j;
       }
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        val_Jacobian_j[nSpecies+nDim][iSpecies] += mF * (dPdU_j[iSpecies]*a_j + rho_j*h_j*daR[iSpecies]);
+        Jacobian_j[nSpecies+nDim][iSpecies] += mF * (dPdU_j[iSpecies]*a_j + rho_j*h_j*daR[iSpecies]);
       }
       for (iDim = 0; iDim < nDim; iDim++) {
-        val_Jacobian_j[nSpecies+nDim][nSpecies+iDim] += mF * (-dPdU_j[nSpecies+nDim]*u_j[iDim]*a_j + rho_j*h_j*daR[nSpecies+iDim]);
+        Jacobian_j[nSpecies+nDim][nSpecies+iDim] += mF * (-dPdU_j[nSpecies+nDim]*u_j[iDim]*a_j + rho_j*h_j*daR[nSpecies+iDim]);
       }
-      val_Jacobian_j[nSpecies+nDim][nSpecies+nDim]   += mF * ((1.0+dPdU_j[nSpecies+nDim])*a_j + rho_j*h_j*daR[nSpecies+nDim]);
-      val_Jacobian_j[nSpecies+nDim][nSpecies+nDim+1] += mF * (dPdU_j[nSpecies+nDim+1]*a_j + rho_j*h_j*daR[nSpecies+nDim+1]);
+      Jacobian_j[nSpecies+nDim][nSpecies+nDim]   += mF * ((1.0+dPdU_j[nSpecies+nDim])*a_j + rho_j*h_j*daR[nSpecies+nDim]);
+      Jacobian_j[nSpecies+nDim][nSpecies+nDim+1] += mF * (dPdU_j[nSpecies+nDim+1]*a_j + rho_j*h_j*daR[nSpecies+nDim+1]);
       for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_j[nSpecies+nDim+1][jVar] +=  mF * FcR[nSpecies+nDim+1]/a_j * daR[jVar];
+        Jacobian_j[nSpecies+nDim+1][jVar] +=  mF * FcR[nSpecies+nDim+1]/a_j * daR[jVar];
       }
-      val_Jacobian_j[nSpecies+nDim+1][nSpecies+nDim+1] += mF * a_j;
+      Jacobian_j[nSpecies+nDim+1][nSpecies+nDim+1] += mF * a_j;
     }
 
     /*--- Calculate derivatives of the split pressure flux ---*/
@@ -345,14 +364,14 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
       /*--- Jacobian contribution: dM terms ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
         for (jVar = 0; jVar < nVar; jVar++) {
-          val_Jacobian_j[iVar][jVar] += dmRM[jVar] * FcLR[iVar];
+          Jacobian_j[iVar][jVar] += dmRM[jVar] * FcLR[iVar];
         }
       }
 
       /*--- Jacobian contribution: dP terms ---*/
       for (iDim = 0; iDim < nDim; iDim++) {
         for (iVar = 0; iVar < nVar; iVar++) {
-          val_Jacobian_j[nSpecies+iDim][iVar] += dpRM[iVar]*UnitNormal[iDim];
+          Jacobian_j[nSpecies+iDim][iVar] += dpRM[iVar]*UnitNormal[iDim];
         }
       }
     }
@@ -360,8 +379,8 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
     /*--- Integrate over dual-face area ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_i[iVar][jVar] *= Area;
-        val_Jacobian_j[iVar][jVar] *= Area;
+        Jacobian_i[iVar][jVar] *= Area;
+        Jacobian_j[iVar][jVar] *= Area;
       }
     }
   }

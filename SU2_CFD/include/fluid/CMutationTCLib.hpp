@@ -73,7 +73,7 @@ public:
   /*!
    * \brief Get species V-E specific heats at constant volume.
    */
-  vector<su2double>& GetSpeciesCvVibEle() final;
+  vector<su2double>& GetSpeciesCvVibEle(su2double val_T) final;
     
   /*!
    * \brief Get mixture energies (total internal energy and vibrational energy).
@@ -88,12 +88,12 @@ public:
   /*!
    * \brief Get species net production rates.
    */
-  vector<su2double>& GetNetProductionRates(bool impicit = false; su2double *V = nullptr; su2double **val_Jacobian) final;
+  vector<su2double>& GetNetProductionRates(bool implicit, su2double *V, su2double **val_Jacobian) final;
 
   /*!
    * \brief Populate chemical source term jacobian. 
    */
-  void ChemistryJacobian(su2double *V; su2double **val_Jacobian) final;
+  void ChemistryJacobian(unsigned short iReaction, su2double *V, su2double **val_Jacobian) final;
 
   /*!
    * \brief Get vibrational energy source term.
@@ -103,7 +103,7 @@ public:
   /*!
    * \brief Get vibration enery source term jacobian.
    */
-  void GetEveSourceTermImplicit(su2double *V, su2double **val_jacobian){
+  void GetEveSourceTermImplicit(su2double *V, su2double **val_jacobian) final;
 
   /*!
    * \brief Get species enthalpies.
