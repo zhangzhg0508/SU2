@@ -148,7 +148,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
   fluidmodel->SetTDStateRhosTTv(rhos, T, Tve);
 
   /*--- Compute residual and jacobians ---*/
-  VTterm = fluidmodel -> GetEveSourceTerm();
+  VTterm = fluidmodel -> ComputeEveSourceTerm();
   if (implicit) 
     fluidmodel->GetEveSourceTermImplicit(V_i, jacobian);
   

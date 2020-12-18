@@ -637,7 +637,7 @@ vector<su2double>& CUserDefinedTCLib::GetSpeciesCvTraRot(){
   return Cvtrs;
 }
 
-vector<su2double>& CUserDefinedTCLib::GetSpeciesCvVibEle(su2double val_T){
+vector<su2double>& CUserDefinedTCLib::ComputeSpeciesCvVibEle(su2double val_T){
 
   su2double thoTve, exptv, num, num2, num3, denom, Cvvs, Cves;
   unsigned short iElectron = nSpecies-1;
@@ -785,7 +785,7 @@ vector<su2double>& CUserDefinedTCLib::ComputeSpeciesEve(su2double val_T){
 
 }
 
-vector<su2double>& CUserDefinedTCLib::GetNetProductionRates(bool implicit, su2double *V, su2double **val_jacobian){
+vector<su2double>& CUserDefinedTCLib::ComputeNetProductionRates(bool implicit, su2double *V, su2double **val_jacobian){
 
   /*---                          ---*/
   /*--- Nonequilibrium chemistry ---*/
@@ -888,7 +888,7 @@ void CUserDefinedTCLib::ChemistryJacobian(unsigned short iReaction, su2double *V
   eve.resize(nSpecies,0.0);
 
   /*--- Compute temperature gradients ---*/
-  eve = GetSpeciesEve(Tve);
+  eve = ComputeSpeciesEve(Tve);
   ComputedTdU(V,dTdU);
   ComputedTvedU(V,eve,dTvedU);
 
@@ -1121,7 +1121,6 @@ su2double CUserDefinedTCLib::ComputeEveSourceTerm(){
 
 }
 
-<<<<<<< HEAD
 void CUserDefinedTCLib::GetEveSourceTermImplicit(su2double *V, su2double **val_jacobian){
 
   unsigned short iVar;	
@@ -1135,8 +1134,8 @@ void CUserDefinedTCLib::GetEveSourceTermImplicit(su2double *V, su2double **val_j
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
 
     /*--- Compute Cvvs ---*/
-    cvve_eq = GetSpeciesCvVibEle(T);
-    cvve    = GetSpeciesCvVibEle(Tve);
+    cvve_eq = ComputeSpeciesCvVibEle(T);
+    cvve    = ComputeSpeciesCvVibEle(Tve);
 
     /*--- Compute Temperature gradients ---*/
     ComputedTdU(V,dTdU);

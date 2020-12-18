@@ -152,7 +152,7 @@ su2double CNEMOGas::ComputeGamma(){
 
 su2double CNEMOGas::ComputerhoCvve() {
 
-  Cvves = ComputeSpeciesCvVibEle();
+  Cvves = ComputeSpeciesCvVibEle(Tve);
 
   rhoCvve = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)

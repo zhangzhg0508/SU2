@@ -65,7 +65,7 @@ CCentLax_NEMO::~CCentLax_NEMO(void) {
 
 CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) {
 
-  unsigned short iDim, iVar;
+  unsigned short iDim, iVar, iSpecies;
   su2double rho_i, rho_j, h_i, h_j, a_i, a_j;
   su2double ProjVel_i, ProjVel_j;
 
@@ -129,27 +129,27 @@ CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) 
     cte = Epsilon_0*StretchingFactor*MeanLambda;
 
     for (iVar = 0; iVar < nSpecies+nDim; iVar++) {
-      val_Jacobian_i[iVar][iVar] += cte;
-      val_Jacobian_j[iVar][iVar] -= cte;
+      Jacobian_i[iVar][iVar] += cte;
+      Jacobian_j[iVar][iVar] -= cte;
     }
 
     /*--- Last rows: CAREFUL!! You have differences of \rho_Enthalpy, not differences of \rho_Energy ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      val_Jacobian_i[nSpecies+nDim][iSpecies] += cte*dPdU_i[iSpecies];
+      Jacobian_i[nSpecies+nDim][iSpecies] += cte*dPdU_i[iSpecies];
     for (iDim = 0; iDim < nDim; iDim++)
-      val_Jacobian_i[nSpecies+nDim][nSpecies+iDim]   += cte*dPdU_i[nSpecies+iDim];
-    val_Jacobian_i[nSpecies+nDim][nSpecies+nDim]     += cte*(1+dPdU_i[nSpecies+nDim]);
-    val_Jacobian_i[nSpecies+nDim][nSpecies+nDim+1]   += cte*dPdU_i[nSpecies+nDim+1];
-    val_Jacobian_i[nSpecies+nDim+1][nSpecies+nDim+1] += cte;
+      Jacobian_i[nSpecies+nDim][nSpecies+iDim]   += cte*dPdU_i[nSpecies+iDim];
+    Jacobian_i[nSpecies+nDim][nSpecies+nDim]     += cte*(1+dPdU_i[nSpecies+nDim]);
+    Jacobian_i[nSpecies+nDim][nSpecies+nDim+1]   += cte*dPdU_i[nSpecies+nDim+1];
+    Jacobian_i[nSpecies+nDim+1][nSpecies+nDim+1] += cte;
 
     /*--- Last row of Jacobian_j ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      val_Jacobian_j[nSpecies+nDim][iSpecies] -= cte*dPdU_j[iSpecies];
+      Jacobian_j[nSpecies+nDim][iSpecies] -= cte*dPdU_j[iSpecies];
     for (iDim = 0; iDim < nDim; iDim++)
-      val_Jacobian_j[nSpecies+nDim][nSpecies+iDim]   -= cte*dPdU_j[nSpecies+nDim];
-    val_Jacobian_j[nSpecies+nDim][nSpecies+nDim]     -= cte*(1+dPdU_j[nSpecies+nDim]);
-    val_Jacobian_j[nSpecies+nDim][nSpecies+nDim+1]   -= cte*dPdU_j[nSpecies+nDim+1];
-    val_Jacobian_j[nSpecies+nDim+1][nSpecies+nDim+1] -= cte;
+      Jacobian_j[nSpecies+nDim][nSpecies+iDim]   -= cte*dPdU_j[nSpecies+nDim];
+    Jacobian_j[nSpecies+nDim][nSpecies+nDim]     -= cte*(1+dPdU_j[nSpecies+nDim]);
+    Jacobian_j[nSpecies+nDim][nSpecies+nDim+1]   -= cte*dPdU_j[nSpecies+nDim+1];
+    Jacobian_j[nSpecies+nDim+1][nSpecies+nDim+1] -= cte;
   }
   return ResidualType<>(Flux, nullptr, nullptr);
 }
