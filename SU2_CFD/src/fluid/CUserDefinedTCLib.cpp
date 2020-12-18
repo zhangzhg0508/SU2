@@ -882,12 +882,14 @@ void CUserDefinedTCLib::ChemistryJacobian(unsigned short iReaction, su2double *V
 
   /*--- Initializing derivative variables ---*/
   dkf.resize(nVar,0.0);      dkb.resize(nVar,0.0);
-  dRfok.resive(nVar,0.0);    dRbok.resize(nVar,0.0);
+  dRfok.resize(nVar,0.0);    dRbok.resize(nVar,0.0);
   alphak.resize(nSpecies,0); betak.resize(nSpecies,0);
+  eve.resize(nSpecies,0.0);
 
   /*--- Compute temperature gradients ---*/
+  eve = GetSpeciesEve(Tve);
   ComputedTdU(V,dTdU);
-  ComputedTvedU(V,dTvedU);
+  ComputedTvedU(V,eve,dTvedU);
 
   /*--- Derivative of modified temperature wrt Trxnf ---*/
   dThf = 0.5 * (1.0 + (Trxnf-T_min)/sqrt((Trxnf-T_min)*(Trxnf-T_min)
