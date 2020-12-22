@@ -388,5 +388,5 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
     }
   }
 
-  return ResidualType<>(Flux, nullptr, nullptr);
+  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 }

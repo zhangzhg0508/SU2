@@ -88,19 +88,16 @@ public:
   /*!
    * \brief Compute species net production rates.
    */
-  vector<su2double>& ComputeNetProductionRates(bool implicit, su2double *V, su2double* eve, 
-su2double* cvve,
-            
-		  su2double* dTdU, su2double* dTvedU,
+  vector<su2double>& ComputeNetProductionRates(bool implicit, su2double *V, su2double* eve,
+                                               su2double* cvve, su2double* dTdU, su2double* dTvedU,
                                                su2double **val_jacobian) final;
 
   /*!
    * \brief Populate chemical source term jacobian. 
    */
-  void ChemistryJacobian(unsigned short iReaction, su2double *V, su2double* eve, 
-su2double* cvve,
-                                                   su2double* dTdU, su2double* dTvedU,
-                                                   su2double **val_jacobian) final;
+  void ChemistryJacobian(unsigned short iReaction, su2double *V, su2double* eve,
+                         su2double* cvve, su2double* dTdU, su2double* dTvedU,
+                         su2double **val_jacobian) final;
 
   /*!
    * \brief Compute vibrational energy source term.
@@ -110,7 +107,9 @@ su2double* cvve,
   /*!
    * \brief Get vibration enery source term jacobian.
    */
-  void GetEveSourceTermImplicit(su2double *V, su2double *eve, su2double *cvve, su2double *dTdU, su2double* dTvedU,su2double **val_jacobian) final;
+  void GetEveSourceTermImplicit(su2double *V, su2double *eve, su2double *cvve,
+                                su2double *dTdU, su2double* dTvedU,
+                                su2double **val_jacobian) final;
 
   /*!
    * \brief Compute species enthalpies.
