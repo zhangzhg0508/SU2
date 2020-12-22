@@ -1113,7 +1113,7 @@ void CNEMOEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver_
 
   /*--- Update the solution ---*/
   SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-  for (usigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     su2double Vol = (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint));
     su2double Delta = nodes->GetDelta_Time(iPoint) / Vol;
@@ -1121,7 +1121,7 @@ void CNEMOEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver_
     const su2double* Res_TruncError = nodes->GetResTruncError(iPoint);
     const su2double* Residual = LinSysRes.GetBlock(iPoint);
 
-    for (usigned short iVar = 0; iVar < nVar; iVar++) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
 
       su2double Res = Residual[iVar] + Res_TruncError[iVar];
       nodes->AddSolution(iPoint, iVar, -Res*Delta);
