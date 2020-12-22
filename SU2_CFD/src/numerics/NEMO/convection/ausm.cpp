@@ -45,6 +45,8 @@ CUpwAUSM_NEMO::CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar,
   rhos_j = new su2double [nSpecies];
   u_i    = new su2double [nDim];
   u_j    = new su2double [nDim];
+  daL    = new su2double [nVar];
+  daR    = new su2double [nVar];
 
   Flux   = new su2double[nVar];
   Jacobian_i = new su2double* [nVar];
@@ -68,6 +70,9 @@ CUpwAUSM_NEMO::~CUpwAUSM_NEMO(void) {
   delete [] u_i;
   delete [] u_j;
   delete [] Flux;
+  delete [] daL;
+  delete [] daR;
+  
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     delete [] Jacobian_i[iVar];
     delete [] Jacobian_j[iVar];
@@ -164,11 +169,11 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
 
   if (implicit){
 
-     auto& Ms = fluidmodel->GetSpeciesMolarMass();
-     Cvtr     = fluidmodel->GetSpeciesCvTraRot();
-     Ru       = 1000.0*UNIVERSAL_GAS_CONSTANT;
-     rhoCvtr_i = V_i[RHOCVTR_INDEX];
-     rhoCvtr_j = V_j[RHOCVTR_INDEX];
+     auto& Ms   = fluidmodel->GetSpeciesMolarMass();
+     auto& Cvtr = fluidmodel->GetSpeciesCvTraRot();
+     Ru         = 1000.0*UNIVERSAL_GAS_CONSTANT;
+     rhoCvtr_i  = V_i[RHOCVTR_INDEX];
+     rhoCvtr_j  = V_j[RHOCVTR_INDEX];
 
     /*--- Initialize the Jacobians ---*/
     for (iVar = 0; iVar < nVar; iVar++) {

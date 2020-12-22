@@ -253,9 +253,11 @@ void CNEMOGas::ComputedTdU(su2double *V, su2double *val_dTdU){
   /*--- Necessary indexes to assess primitive variables ---*/
   unsigned long VEL_INDEX     = nSpecies+2;
   unsigned long RHOCVTR_INDEX = nSpecies+nDim+6;
+  unsigned long T_INDEX       = nSpecies;
 
   /*--- Rename for convenience ---*/
   rhoCvtr = V[RHOCVTR_INDEX];
+  T       = V[T_INDEX];
 
   Cvtrs              = GetSpeciesCvTraRot();
   Enthalpy_Formation = GetSpeciesFormationEnthalpy();
