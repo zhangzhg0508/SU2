@@ -100,7 +100,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeChemistry(const CConfig *config) 
 
   /*--- Set mixture state ---*/
   fluidmodel->SetTDStateRhosTTv(rhos, T, Tve);
-  ws = fluidmodel->ComputeNetProductionRates(implicit, V_i, jacobian);
+  ws = fluidmodel->ComputeNetProductionRates(implicit, V_i, eve_i, dTdU_i, dTvedU_i, jacobian);
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
     residual[iSpecies] = ws[iSpecies] *Volume;

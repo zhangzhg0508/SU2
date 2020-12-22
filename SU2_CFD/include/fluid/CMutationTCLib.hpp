@@ -88,12 +88,16 @@ public:
   /*!
    * \brief Compute species net production rates.
    */
-  vector<su2double>& ComputeNetProductionRates(bool implicit, su2double *V, su2double **val_Jacobian) final;
+  vector<su2double>& ComputeNetProductionRates(bool implicit, su2double *V, su2double* eve, 
+                                               su2double* dTdU, su2double* dTvedU,
+                                               su2double **val_jacobian) final;
 
   /*!
    * \brief Populate chemical source term jacobian. 
    */
-  void ChemistryJacobian(unsigned short iReaction, su2double *V, su2double **val_Jacobian) final;
+  void ChemistryJacobian(unsigned short iReaction, su2double *V, su2double* eve, 
+                                                   su2double* dTdU, su2double* dTvedU,
+                                                   su2double **val_jacobian) final;
 
   /*!
    * \brief Compute vibrational energy source term.

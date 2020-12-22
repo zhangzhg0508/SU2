@@ -785,7 +785,9 @@ vector<su2double>& CUserDefinedTCLib::ComputeSpeciesEve(su2double val_T){
 
 }
 
-vector<su2double>& CUserDefinedTCLib::ComputeNetProductionRates(bool implicit, su2double *V, su2double **val_jacobian){
+vector<su2double>& CUserDefinedTCLib::ComputeNetProductionRates(bool implicit, su2double *V, su2double* eve, 
+                                                                su2double* dTdU, su2double* dTvedU,
+                                                                su2double **val_jacobian){
 
   /*---                          ---*/
   /*--- Nonequilibrium chemistry ---*/
@@ -867,7 +869,7 @@ vector<su2double>& CUserDefinedTCLib::ComputeNetProductionRates(bool implicit, s
     }
 
     if (implicit) {
-      ChemistryJacobian(iReaction, V, val_jacobian);
+      ChemistryJacobian(iReaction, V, eve, dTdU, dTvedU, val_jacobian);
     }
 
   } //iReaction
@@ -875,7 +877,9 @@ vector<su2double>& CUserDefinedTCLib::ComputeNetProductionRates(bool implicit, s
   return ws;
 }
 
-void CUserDefinedTCLib::ChemistryJacobian(unsigned short iReaction, su2double *V, su2double **val_jacobian) {
+void CUserDefinedTCLib::ChemistryJacobian(unsigned short iReaction, su2double *V, su2double* eve, 
+                                          su2double* dTdU, su2double* dTvedU,
+                                          su2double **val_jacobian) {
 
   unsigned short ii, iVar, jVar, iSpecies;
   unsigned short nEve = nSpecies+nDim+1;
@@ -885,12 +889,6 @@ void CUserDefinedTCLib::ChemistryJacobian(unsigned short iReaction, su2double *V
   dkf.resize(nVar,0.0);      dkb.resize(nVar,0.0);
   dRfok.resize(nVar,0.0);    dRbok.resize(nVar,0.0);
   alphak.resize(nSpecies,0); betak.resize(nSpecies,0);
-  eve.resize(nSpecies,0.0);
- 
-  /*--- Compute temperature gradients ---*/
-  eve = ComputeSpeciesEve(Tve);
-  ComputedTdU(V,dTdU);
-  ComputedTvedU(V,eve,dTvedU);
 
   /*--- Derivative of modified temperature wrt Trxnf ---*/
   dThf = 0.5 * (1.0 + (Trxnf-T_min)/sqrt((Trxnf-T_min)*(Trxnf-T_min)
