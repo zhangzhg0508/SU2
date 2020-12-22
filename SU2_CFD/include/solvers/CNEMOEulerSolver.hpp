@@ -277,7 +277,8 @@ public:
      * \param[in] solver_container - Container vector with all the solutions.
      * \param[in] config - Definition of the particular problem.
      */
-  void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) override;
+  void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container,
+                               CConfig *config) final;
 
   /*!
      * \brief Update the solution using an explicit Euler scheme.
@@ -287,7 +288,19 @@ public:
    * \param[in] iRKStep - Runge-Kutta step.
      */
   void ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
-                            CConfig *config, unsigned short iRKStep) override;
+                            CConfig *config, unsigned short iRKStep) final;
+
+  /*!
+   * \brief Update the solution using the classical fourth-order Runge-Kutta scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  void ClassicalRK4_Iteration(CGeometry *geometry,
+                              CSolver **solver_container,
+                              CConfig *config,
+                              unsigned short iRKStep) final;
 
   /*!
      * \brief Update the solution using an implicit Euler scheme.
