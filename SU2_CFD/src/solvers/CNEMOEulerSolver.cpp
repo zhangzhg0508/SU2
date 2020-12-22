@@ -46,20 +46,19 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     description = "Euler";
   }
 
-  unsigned long iPoint, counter_local, counter_global = 0;
-  unsigned short iDim, iMarker, iSpecies, nLineLets;
-  unsigned short nZone = geometry->GetnZone();
-  su2double *Mvec_Inf, Alpha, Beta, Soundspeed_Inf, sqvel;
-  bool restart   = (config->GetRestart() || config->GetRestart_Flow());
-  unsigned short direct_diff = config->GetDirectDiff();
-  int Unst_RestartIter = 0;
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
-  bool adjoint = config->GetDiscrete_Adjoint();
-  string filename_ = "flow";
-
+  const auto nZone = geometry->GetnZone();
+  const bool restart = (config->GetRestart() || config->GetRestart_Flow());
+  const auto direct_diff = config->GetDirectDiff();
+  const bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                         (config->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
+  const bool adjoint = config->GetDiscrete_Adjoint();
   bool nonPhys;
+
+  int Unst_RestartIter = 0;
+  unsigned long iPoint, counter_local = 0, counter_global = 0;
+  unsigned short iDim, iMarker, iSpecies, nLineLets;
+  su2double *Mvec_Inf, Alpha, Beta, Soundspeed_Inf, sqvel;
   vector<su2double> Energies_Inf;
 
   /*--- Store the multigrid level. ---*/
@@ -83,10 +82,11 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
     }
 
+    string filename_ = "flow";
     filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
 
     /*--- Read and store the restart metadata ---*/
-    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
+    Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
 
   }
 
@@ -288,74 +288,56 @@ CNEMOEulerSolver::~CNEMOEulerSolver(void) {
 
 void CNEMOEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
 
-  unsigned long iPoint;
-  unsigned short iMesh;
   const bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  const bool rans = false;
+  const bool rans = (config->GetKind_Turb_Model() != NONE);
   const bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                           (config->GetTime_Marching() == DT_STEPPING_2ND));
 
 
+  /*--- Start OpenMP parallel region. ---*/
+  SU2_OMP_PARALLEL
+  {
+
+  unsigned long iPoint;
+  unsigned short iMesh, iDim;
+
   /*--- Make sure that the solution is well initialized for unsteady
    calculations with dual time-stepping (load additional restarts for 2nd-order). ---*/
 
-  if (dual_time && (TimeIter == 0 || (restart && TimeIter == config->GetRestart_Iter()))    ) {
-
-    /*--- Push back the initial condition to previous solution containers
-     for a 1st-order restart or when simply intitializing to freestream. ---*/
-
-    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-        solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
-        solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n1();
-        if (rans) {
-          solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
-          solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n1();
-        }
-      }
-    }
-
-    if ((restart && TimeIter == config->GetRestart_Iter()) &&
-        (config->GetTime_Marching() == DT_STEPPING_2ND)) {
-
-      /*--- Load an additional restart file for a 2nd-order restart ---*/
-      solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetRestart_Iter()-1), true);
-
-      /*--- Load an additional restart file for the turbulence model ---*/
-      if (rans)
-        solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetRestart_Iter()-1), false);
-
-      /*--- Push back this new solution to time level N. ---*/
-
-      for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-        for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-          solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
-          if (rans)
-            solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
-        }
-      }
-    }
+  if (dual_time && ((TimeIter == 0) || (restart && (TimeIter == config->GetRestart_Iter()))) ) {
+    PushSolutionBackInTime(TimeIter, restart, rans, solver_container, geometry, config);
   }
+
+  } // end SU2_OMP_PARALLEL
+
 }
 
 void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                            unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
+  //bool disc_adjoint     = config->GetDiscrete_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
   bool center_jst       = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
   bool center_jst_ke    = (config->GetKind_Centered_Flow() == JST_KE) && (iMesh == MESH_0);
 
   /*--- Set the primitive variables ---*/
+  SU2_OMP_MASTER
   ErrorCounter = 0;
-  ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
+  SU2_OMP_BARRIER
+
+  SU2_OMP_ATOMIC
+  ErrorCounter += SetPrimitive_Variables(solver_container, config, Output);
 
   if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
-
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER
+    {
       unsigned long tmp = ErrorCounter;
       SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
       config->SetNonphysical_Points(ErrorCounter);
-
+    }
+    SU2_OMP_BARRIER
   }
 
   /*--- Artificial dissipation ---*/
@@ -372,7 +354,9 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
   if(!ReducerStrategy && !Output) {
     LinSysRes.SetValZero();
     if (implicit) Jacobian.SetValZero();
+    else {SU2_OMP_BARRIER} // because of "nowait" in LinSysRes
   }
+
 }
 
 void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container,
@@ -409,23 +393,20 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
 
 unsigned long CNEMOEulerSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
 
-  unsigned long iPoint, nonPhysicalPoints = 0;
-  bool nonphysical = true;
+  /*--- Number of non-physical points, local to the thread, needs
+   *    further reduction if function is called in parallel ---*/
+  unsigned long nonPhysicalPoints = 0;
 
-  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
-    /*--- Incompressible flow, primitive variables ---*/
+    /*--- Reacting, non-eq flow, primitive variables ---*/
 
-    nonphysical = nodes->SetPrimVar(iPoint,FluidModel);
+    bool nonphysical = nodes->SetPrimVar(iPoint,FluidModel);
 
     /* Check for non-realizable states for reporting. */
 
     if (nonphysical) nonPhysicalPoints++;
-
-    /*--- Initialize the convective, source and viscous residual vector ---*/
-
-    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
-
   }
 
   return nonPhysicalPoints;
@@ -1103,86 +1084,127 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
   }
 }
 
-void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+template<ENUM_TIME_INT IntegrationType>
+void CNEMOEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver_container,
+                                          CConfig *config, unsigned short iRKStep) {
 
-  su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
-  unsigned short iVar;
-  unsigned long iPoint;
+  static_assert(IntegrationType == CLASSICAL_RK4_EXPLICIT ||
+                IntegrationType == RUNGE_KUTTA_EXPLICIT ||
+                IntegrationType == EULER_EXPLICIT, "");
 
-  bool adjoint = config->GetContinuous_Adjoint();
+  const su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
 
-  for (iVar = 0; iVar < nVar; iVar++) {
+  /*--- Hard-coded classical RK4 coefficients. Will be added to config. ---*/
+  const su2double RK_FuncCoeff[] = {1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0};
+  const su2double RK_TimeCoeff[] = {0.5, 0.5, 1.0, 1.0};
+
+  /*--- Set shared residual variables to 0 and declare
+   *    local ones for current thread to work on. ---*/
+  SU2_OMP_MASTER
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
+  SU2_OMP_BARRIER
+
+  su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
+  const su2double* coordMax[MAXNVAR] = {nullptr};
+  unsigned long idxMax[MAXNVAR] = {0};
 
   /*--- Update the solution ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+  for (usigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    Vol = (geometry->nodes->GetVolume(iPoint) +
-           geometry->nodes->GetPeriodicVolume(iPoint));
+    su2double Vol = (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint));
+    su2double Delta = nodes->GetDelta_Time(iPoint) / Vol;
 
-    Delta = nodes->GetDelta_Time(iPoint) / Vol;
+    const su2double* Res_TruncError = nodes->GetResTruncError(iPoint);
+    const su2double* Residual = LinSysRes.GetBlock(iPoint);
 
-    local_Res_TruncError = nodes->GetResTruncError(iPoint);
-    local_Residual = LinSysRes.GetBlock(iPoint);
+    for (usigned short iVar = 0; iVar < nVar; iVar++) {
 
-    if (!adjoint) {
-      for (iVar = 0; iVar < nVar; iVar++) {
+      su2double Res = Residual[iVar] + Res_TruncError[iVar];
+      nodes->AddSolution(iPoint, iVar, -Res*Delta);
 
-        Res = local_Residual[iVar] + local_Res_TruncError[iVar];
-        nodes->AddSolution(iPoint, iVar, -Res*Delta);
-        AddRes_RMS(iVar, Res*Res);
-        AddRes_Max(iVar, fabs(Res), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
+      /*--- "Static" switch which should be optimized at compile time. ---*/
+      switch(IntegrationType) {
 
+        case EULER_EXPLICIT:
+          nodes->AddSolution(iPoint, iVar, -Res*Delta);
+          break;
+
+        case RUNGE_KUTTA_EXPLICIT:
+          nodes->AddSolution(iPoint, iVar, -Res*Delta*RK_AlphaCoeff);
+          break;
+
+        case CLASSICAL_RK4_EXPLICIT:
+        {
+          su2double tmp_time = -1.0*RK_TimeCoeff[iRKStep]*Delta;
+          su2double tmp_func = -1.0*RK_FuncCoeff[iRKStep]*Delta;
+
+          if (iRKStep < 3) {
+            /* Base solution update */
+            nodes->AddSolution(iPoint, iVar, tmp_time*Res);
+
+            /* New solution update */
+            nodes->AddSolution_New(iPoint, iVar, tmp_func*Res);
+          } else {
+            nodes->SetSolution(iPoint, iVar, nodes->GetSolution_New(iPoint,iVar) + tmp_func*Res);
+          }
+        }
+        break;
+      }
+
+      /*--- Update residual information for current thread. ---*/
+      resRMS[iVar] += Res*Res;
+      if (fabs(Res) > resMax[iVar]) {
+        resMax[iVar] = fabs(Res);
+        idxMax[iVar] = iPoint;
+        coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
       }
     }
   }
 
+  /*--- Reduce residual information over all threads in this rank. ---*/
+  SU2_OMP_CRITICAL
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    AddRes_RMS(iVar, resRMS[iVar]);
+    AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
+  }
+  SU2_OMP_BARRIER
+
   /*--- MPI solution ---*/
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
 
   /*--- Compute the root mean square residual ---*/
   SetResidual_RMS(geometry, config);
+
+  SU2_OMP_MASTER
+  {
+    /*--- Compute the root mean square residual ---*/
+
+    SetResidual_RMS(geometry, config);
+  }
+  SU2_OMP_BARRIER
+
 }
 
-void CNEMOEulerSolver::ExplicitRK_Iteration(CGeometry *geometry,CSolver **solver_container, CConfig *config, unsigned short iRKStep) {
+void CNEMOEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
+                                            CConfig *config, unsigned short iRKStep) {
 
-  su2double *Residual, *Res_TruncError, Vol, Delta, Res;
-  unsigned short iVar;
-  unsigned long iPoint;
+  Explicit_Iteration<RUNGE_KUTTA_EXPLICIT>(geometry, solver_container, config, iRKStep);
+}
 
-  su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
+void CNEMOEulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
+                                              CConfig *config, unsigned short iRKStep) {
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  Explicit_Iteration<CLASSICAL_RK4_EXPLICIT>(geometry, solver_container, config, iRKStep);
+}
 
-  /*--- Update the solution ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    Vol = geometry-> nodes->GetVolume(iPoint);
-    Delta = nodes->GetDelta_Time(iPoint) / Vol;
+void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-    Res_TruncError = nodes->GetResTruncError(iPoint);
-    Residual = LinSysRes.GetBlock(iPoint);
-
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Res = Residual[iVar] + Res_TruncError[iVar];
-      nodes->AddSolution(iPoint,iVar, -Res*Delta*RK_AlphaCoeff);
-      AddRes_RMS(iVar, Res*Res);
-      AddRes_Max(iVar, fabs(Res), geometry-> nodes->GetGlobalIndex(iPoint),geometry->nodes->GetCoord(iPoint));
-    }
-  }
-
-  /*--- MPI solution ---*/
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
-  /*--- Compute the root mean square residual ---*/
-  SetResidual_RMS(geometry, config);
-
+  Explicit_Iteration<EULER_EXPLICIT>(geometry, solver_container, config, 0);
 }
 
 void CNEMOEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
