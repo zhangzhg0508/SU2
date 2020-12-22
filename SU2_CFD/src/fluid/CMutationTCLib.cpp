@@ -54,12 +54,13 @@ vector<su2double>& CMutationTCLib::ComputeMixtureEnergies(){return MassFrac;}
 vector<su2double>& CMutationTCLib::ComputeSpeciesEve(su2double val_T){return MassFrac;}
 
 vector<su2double>& CMutationTCLib::ComputeNetProductionRates(bool implicit, su2double *V, su2double* eve, 
-                                                             su2double* dTdU, su2double* dTvedU,
+                                    su2double* cvve,
+                         su2double* dTdU, su2double* dTvedU,
                                                              su2double **val_jacobian){return MassFrac;}
 
 su2double CMutationTCLib::ComputeEveSourceTerm(){return 0;}
 
-void CMutationTCLib::GetEveSourceTermImplicit(su2double *V, su2double **val_jacobian){}
+void CMutationTCLib::GetEveSourceTermImplicit(su2double *V, su2double *eve, su2double *cvve, su2double *dTdU, su2double* dTvedU,su2double **val_jacobian){}
 
 vector<su2double>& CMutationTCLib::ComputeSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){return MassFrac;}
 

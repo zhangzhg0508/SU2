@@ -785,7 +785,8 @@ vector<su2double>& CUserDefinedTCLib::ComputeSpeciesEve(su2double val_T){
 
 }
 
-vector<su2double>& CUserDefinedTCLib::ComputeNetProductionRates(bool implicit, su2double *V, su2double* eve, 
+vector<su2double>& CUserDefinedTCLib::ComputeNetProductionRates(bool implicit, su2double *V,
+                                                                su2double* eve, su2double *cvve,
                                                                 su2double* dTdU, su2double* dTvedU,
                                                                 su2double **val_jacobian){
 
@@ -869,7 +870,7 @@ vector<su2double>& CUserDefinedTCLib::ComputeNetProductionRates(bool implicit, s
     }
 
     if (implicit) {
-      ChemistryJacobian(iReaction, V, eve, dTdU, dTvedU, val_jacobian);
+      ChemistryJacobian(iReaction, V, eve, cvve, dTdU, dTvedU, val_jacobian);
     }
 
   } //iReaction
@@ -877,7 +878,8 @@ vector<su2double>& CUserDefinedTCLib::ComputeNetProductionRates(bool implicit, s
   return ws;
 }
 
-void CUserDefinedTCLib::ChemistryJacobian(unsigned short iReaction, su2double *V, su2double* eve, 
+void CUserDefinedTCLib::ChemistryJacobian(unsigned short iReaction, su2double *V, 
+		                          su2double* eve, su2double *cvve,
                                           su2double* dTdU, su2double* dTvedU,
                                           su2double **val_jacobian) {
 
@@ -1057,7 +1059,6 @@ su2double CUserDefinedTCLib::ComputeEveSourceTerm(){
   MolarFrac.resize(nSpecies,0.0);
   eve_eq.resize(nSpecies,0.0);
   eve.resize(nSpecies,0.0);
-  taus.resize(nSpecies,0.0);
 
   omegaVT = 0.0;
   omegaCV = 0.0;
@@ -1119,25 +1120,19 @@ su2double CUserDefinedTCLib::ComputeEveSourceTerm(){
 
 }
 
-void CUserDefinedTCLib::GetEveSourceTermImplicit(su2double *V, su2double **val_jacobian){
+void CUserDefinedTCLib::GetEveSourceTermImplicit(su2double *V, su2double *eve, su2double *cvve, su2double *dTdU, su2double* dTvedU, su2double **val_jacobian){
 
   unsigned short iVar;	
   unsigned short nEv  = nSpecies+nDim+1;
   unsigned short nVar = nSpecies+nDim+2;
   
   cvve_eq.resize(nSpecies,0.0);
-  cvve.resize(nSpecies,0.0);
 
   /*--- Loop through species ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
 
     /*--- Compute Cvvs ---*/
     cvve_eq = ComputeSpeciesCvVibEle(T);
-    cvve    = ComputeSpeciesCvVibEle(Tve);
-
-    /*--- Compute Temperature gradients ---*/
-    ComputedTdU(V,dTdU);
-    ComputedTvedU(V,eve,dTvedU);
 
     for (iVar = 0; iVar < nVar; iVar++) {
       val_jacobian[nEv][iVar] += rhos[iSpecies]/taus[iSpecies]*(cvve_eq[iSpecies]*dTdU[iVar] -

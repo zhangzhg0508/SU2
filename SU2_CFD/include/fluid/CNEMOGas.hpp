@@ -79,6 +79,7 @@ protected:
   hs,                                    /*!< \brief Species enthalpies */
   MolarFractions,                        /*!< \brief Species molar fractions */
   ws,                                    /*!< \brief Species net production rates */
+  taus,                                  /*!< \brief Relaxtion time scales */
   DiffusionCoeff,                        /*!< \brief Species diffusion coefficients*/
   Enthalpy_Formation,                    /*!< \brief Enthalpy of formation */
   Ref_Temperature;                       /*!< \brief Reference temperature for thermodynamic relations */
@@ -126,14 +127,16 @@ public:
    * \brief Get vibrational energy source term.
    */
   virtual vector<su2double>& ComputeNetProductionRates(bool implicit, su2double *V, su2double* eve, 
-                                                       su2double* dTdU, su2double* dTvedU,
+su2double* cvve,            
+		  su2double* dTdU, su2double* dTvedU,
                                                        su2double **val_jacobian) = 0;
   
   /*!
    * \brief Populate chemical source term jacobian. 
    */
   virtual void ChemistryJacobian(unsigned short iReaction, su2double *V, su2double* eve, 
-                                                su2double* dTdU, su2double* dTvedU,
+su2double* cvve,              
+		  su2double* dTdU, su2double* dTvedU,
                                                 su2double **val_jacobian){};
   
   /*!
@@ -144,7 +147,7 @@ public:
   /*!
    * \brief Get vibration enery source term jacobian.
    */
-   virtual void GetEveSourceTermImplicit(su2double *V, su2double **val_jacobian){};
+   virtual void GetEveSourceTermImplicit(su2double *V,su2double *eve, su2double *cvve, su2double *dTdU, su2double* dTvedU, su2double **val_jacobian){};
 
   /*!
    * \brief Get vector of species V-E energy.

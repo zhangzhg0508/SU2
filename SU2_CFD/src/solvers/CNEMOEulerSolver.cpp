@@ -939,12 +939,12 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
     err = false;
     for (iVar = 0; iVar < nVar; iVar++)
       if (residual[iVar] != residual[iVar]) err = true;
-    if (implicit)
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nVar; jVar++)
-          if ((Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) ||
-              (Jacobian_j[iVar][jVar] != Jacobian_j[iVar][jVar])   )
-            err = true;
+    //if (implicit)
+    //  for (iVar = 0; iVar < nVar; iVar++)
+    //    for (jVar = 0; jVar < nVar; jVar++)
+    //      if ((residual.jacobian_i[iVar][jVar] != residual.jacobian_i[iVar][jVar]) ||
+    //          (residual.jacobian_j[iVar][jVar] != residual.jacobian_j[iVar][jVar])   )
+    //        err = true;
 
     /*--- Update the residual and Jacobian ---*/
     if (!err) {

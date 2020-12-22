@@ -86,8 +86,7 @@ private:
   vector<su2double>
   dkf, dkb,
   dRfok, dRbok,
-	eve, eve_eq, cvve, cvve_eq,
-  taus;
+	eve, eve_eq, cvve, cvve_eq;
 
   vector<int>
   alphak, betak;
@@ -141,14 +140,18 @@ public:
    * \brief Compute species net production rates.
    */
   vector<su2double>& ComputeNetProductionRates(bool implicit, su2double *V, su2double* eve, 
-                                                       su2double* dTdU, su2double* dTvedU,
+    su2double* cvve,
+                                     
+    		  su2double* dTdU, su2double* dTvedU,
                                                        su2double **val_jacobian) final;
 
   /*!
    * \brief Populate chemical source term jacobian. 
    */
   void ChemistryJacobian(unsigned short iReaction, su2double *V, su2double* eve, 
-                                                       su2double* dTdU, su2double* dTvedU,
+su2double* cvve,
+
+su2double* dTdU, su2double* dTvedU,
                                                        su2double **val_jacobian) final;
 
   /*!
@@ -159,7 +162,7 @@ public:
   /*!
    * \brief Get vibration enery source term jacobian.
    */
-  void GetEveSourceTermImplicit(su2double *V, su2double **val_jacobian) final;
+  void GetEveSourceTermImplicit(su2double *V, su2double *eve, su2double *cvve, su2double *dTdU, su2double* dTvedU,su2double **val_jacobian) final;
 
   /*!
    * \brief Compute species enthalpies.
