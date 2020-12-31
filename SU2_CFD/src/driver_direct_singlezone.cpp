@@ -132,7 +132,13 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
       (config_container[ZONE_0]->GetKind_Solver() ==  RANS) ) {
       solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0], solver_container[ZONE_0][INST_0], config_container[ZONE_0], TimeIter);
   }
-
+  //BFM:
+  /*
+  if (config_container[ZONE_0]->GetBody_Force()) {
+    solver_container[ZONE_0][INST_0][MESH_0][BFM_SOL]->Preprocess(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]);
+    
+  }
+  */
 #ifdef HAVE_MPI
   SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif

@@ -1060,6 +1060,7 @@ private:
   su2double Body_Force_Blades; /*!< \brief Determines the number of blades used in body force calculations */
   su2double Body_Force_Rotation; /*!< \brief Determines the pitch used in body force calculations */
   su2double Body_Force_Radius; /*!< \brief Determines the pitch used in body force calculations */
+  unsigned short BFM_Formulation;
   //su2double* Body_Force_Radius; /*!< \brief Determines the pitch used in body force calculations */
   string BF_Normals_Filename; /*!< \brief Name of input file for body force camber normals */
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
@@ -6029,6 +6030,12 @@ public:
    * \return Body force rotation
    */
   su2double GetBody_Force_Rotation(void);
+
+  /*!
+   * \brief Get rotation that will be used for body force
+   * \return Body force rotation
+   */
+  unsigned short GetBFM_Formulation(void);
 
   /*!
    * \brief Get radius that will be used for body force

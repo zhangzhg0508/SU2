@@ -1356,15 +1356,15 @@ inline void CVariable::RegisterSolution(bool input) {
 
 inline void CVariable::RegisterBFSource(bool input) {
   if (input) {
-	for (unsigned short iDim=0; iDim<nDim+2; iDim++){
+	for (unsigned short iDim=0; iDim<9; iDim++){
 		
-		AD::RegisterInput(Body_Force_Turbo[iDim]);
+		AD::RegisterInput(Body_Force_Parameters[iDim]);
 	}
 	  
   }
   else {
-	  for (unsigned short iDim=0; iDim<nDim+2; iDim++){
-		AD::RegisterOutput(Body_Force_Turbo[iDim]);
+	  for (unsigned short iDim=0; iDim<9; iDim++){
+		AD::RegisterOutput(Body_Force_Parameters[iDim]);
 	}
 	}
 }

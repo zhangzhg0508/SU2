@@ -1644,6 +1644,8 @@ inline su2double CConfig::GetBody_Force_Rotation(void) { return Body_Force_Rotat
 
 inline su2double CConfig::GetBody_Force_Radius(void) { return Body_Force_Radius; }
 
+inline unsigned short CConfig::GetBFM_Formulation(void) { return BFM_Formulation; }
+
 inline string CConfig::GetBF_Normals_Filename(void) { return BF_Normals_Filename; }
 
 inline bool CConfig::GetSmoothNumGrid(void) { return SmoothNumGrid; }

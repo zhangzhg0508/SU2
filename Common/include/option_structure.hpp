@@ -116,7 +116,8 @@ const unsigned int MAX_PARAMETERS = 10;		   /*!< \brief Maximum number of parame
 const unsigned int MAX_NUMBER_PERIODIC = 10; /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;    /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 15;	     /*!< \brief Maximum number of FFDBoxes for the FFD. */
-const unsigned int MAX_SOLS = 7;		         /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+//BFM:
+const unsigned int MAX_SOLS =  8;	         /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;		         /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_TERMS_FEA = 10;       /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;            /*!< \brief Maximum number of zones. */
@@ -470,7 +471,7 @@ const int ADJTURB_SOL = 3;	/*!< \brief Position of the continuous adjoint turbul
 const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution in the solver container array. */
 const int HEAT_SOL = 5;		/*!< \brief Position of the heat equation in the solution solver array. */
 const int ADJHEAT_SOL = 6;  /*!< \brief Position of the adjoint heat equation in the solution solver array. */
-
+const int BFM_SOL = 7; //BFM
 const int FEA_SOL = 0;			/*!< \brief Position of the FEA equation in the solution solver array. */
 const int ADJFEA_SOL = 1;		/*!< \brief Position of the FEA adjoint equation in the solution solver array. */
 
@@ -692,6 +693,16 @@ static const map<string, ENUM_BODY_FORCE_TYPE> Body_Force_Map = CCreateMap<strin
         ("CONSTANT_BF", CONSTANT_BF)
         ("VARIABLE_BF", VARIABLE_BF);
 
+/*!
+ * \brief body-force model formulation
+ */
+enum ENUM_BFM_FORMULATION {
+    HALL = 0,			/*!< \brief Constant body force over domain using vector. */
+    THOLLET = 1,				/*!< \brief Body force model that is spatially varying. */
+};
+static const map<string, ENUM_BFM_FORMULATION> BFM_map = CCreateMap<string, ENUM_BFM_FORMULATION>
+        ("HALL", HALL)
+        ("THOLLET", THOLLET);
 /*!
  * \brief type of wind gusts
  */

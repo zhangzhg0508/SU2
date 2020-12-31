@@ -68,6 +68,8 @@ class TestCase:
         self.test_iter = 1
         self.ntest_vals = 4
         self.test_vals = []  
+        self.sim_vals = []
+        self.delta_vals = []
 
         # These can be optionally varied 
         self.su2_exec    = "SU2_CFD" 
@@ -77,6 +79,11 @@ class TestCase:
         # Options for file-comparison tests
         self.reference_file = "of_grad.dat.ref"
         self.test_file      = "of_grad.dat"
+
+        # Options for postprocessing
+        self.postProcessing = False
+        self.postProcessor = ""
+        self.postProcessorData = ""
 
     def run_test(self):
 
@@ -125,12 +132,13 @@ class TestCase:
                     pass
                 timed_out = True
                 passed    = False
+        
 
         # Examine the output
         f = open(logfilename,'r')
         output = f.readlines()
-        delta_vals = []
-        sim_vals = []
+        self.delta_vals = []
+        self.sim_vals = []
         if not timed_out:
             start_solver = False
             for line in output:
@@ -156,9 +164,9 @@ class TestCase:
                             passed = False
                             break
                         for j in range(len(data)):
-                            sim_vals.append( float(data[j]) )
-                            delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
-                            if delta_vals[j] > self.tol:
+                            self.sim_vals.append( float(data[j]) )
+                            self.delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
+                            if self.delta_vals[j] > self.tol:
                                 exceed_tol = True
                                 passed     = False
                         break
@@ -174,6 +182,12 @@ class TestCase:
         # Write the test results 
         #for j in output:
         #  print(j)
+        
+        
+        if self.postProcessor != "":
+            self.postProcess()
+
+
 
         if passed:
             print("%s: PASSED"%self.tag)
@@ -200,9 +214,9 @@ class TestCase:
 
         print_vals(self.test_vals, name="test_vals (stored)")
 
-        print_vals(sim_vals, name="sim_vals (computed)")
+        print_vals(self.sim_vals, name="sim_vals (computed)")
 
-        print_vals(delta_vals, name="delta_vals")
+        print_vals(self.delta_vals, name="delta_vals")
 
         print('test duration: %.2f min'%(running_time/60.0))
         print('==================== End Test: %s ====================\n'%self.tag)
@@ -334,8 +348,8 @@ class TestCase:
         # Examine the output
         f = open(logfilename,'r')
         output = f.readlines()
-        delta_vals = []
-        sim_vals = []
+        self.delta_vals = []
+        self.sim_vals = []
         if not timed_out:
             start_solver = False
             for line in output:
@@ -359,9 +373,9 @@ class TestCase:
                             passed = False
                             break
                         for j in range(len(data)):
-                            sim_vals.append( float(data[j]) )
-                            delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
-                            if delta_vals[j] > self.tol:
+                            self.sim_vals.append( float(data[j]) )
+                            self.delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
+                            if self.delta_vals[j] > self.tol:
                                 exceed_tol = True
                                 passed     = False
                         break
@@ -403,9 +417,9 @@ class TestCase:
 
         print_vals(self.test_vals, name="test_vals (stored)")
 
-        print_vals(sim_vals, name="sim_vals (computed)")
+        print_vals(self.sim_vals, name="sim_vals (computed)")
 
-        print_vals(delta_vals, name="delta_vals")
+        print_vals(self.delta_vals, name="delta_vals")
 
         print('test duration: %.2f min'%(running_time/60.0))
         print('==================== End Test: %s ====================\n'%self.tag)
@@ -456,8 +470,8 @@ class TestCase:
         # Examine the output
         f = open(logfilename,'r')
         output = f.readlines()
-        delta_vals = []
-        sim_vals = []
+        self.delta_vals = []
+        self.sim_vals = []
         data = []
         if not timed_out:
             start_solver = False
@@ -472,7 +486,7 @@ class TestCase:
                     if line.find('Chord') > -1:
                         raw_data = line.replace(",", "").split()
                         data.append(raw_data[1])
-                        found_chord = True
+                        self.found_chord = True
                         data.append(raw_data[5])
                         found_radius = True
                         data.append(raw_data[8])
@@ -486,9 +500,9 @@ class TestCase:
                     print("Error in test_vals!")
                     passed = False
                 for j in range(len(data)):
-                    sim_vals.append( float(data[j]) )
-                    delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
-                    if delta_vals[j] > self.tol:
+                    self.sim_vals.append( float(data[j]) )
+                    self.delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
+                    if self.delta_vals[j] > self.tol:
                         exceed_tol = True
                         passed     = False
             else:
@@ -527,9 +541,9 @@ class TestCase:
 
         print_vals(self.test_vals, name="test_vals (stored)")
 
-        print_vals(sim_vals, name="sim_vals (computed)")
+        print_vals(self.sim_vals, name="sim_vals (computed)")
 
-        print_vals(delta_vals, name="delta_vals")
+        print_vals(self.delta_vals, name="delta_vals")
 
         print('test duration: %.2f min'%(running_time/60.0))
         print('==================== End Test: %s ====================\n'%self.tag)
@@ -575,8 +589,8 @@ class TestCase:
         # Examine the output
         f = open(logfilename,'r')
         output = f.readlines()
-        delta_vals = []
-        sim_vals = []
+        self.delta_vals = []
+        self.sim_vals = []
         if not timed_out:
             start_solver = False
             for line in output:
@@ -600,9 +614,9 @@ class TestCase:
                             passed = False
                             break
                         for j in range(len(data)):
-                            sim_vals.append( float(data[j]) )
-                            delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
-                            if delta_vals[j] > self.tol:
+                            self.sim_vals.append( float(data[j]) )
+                            self.delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
+                            if self.delta_vals[j] > self.tol:
                                 exceed_tol = True
                                 passed     = False
                         break
@@ -644,9 +658,9 @@ class TestCase:
 
         print_vals(self.test_vals, name="test_vals (stored)")
 
-        print_vals(sim_vals, name="sim_vals (computed)")
+        print_vals(self.sim_vals, name="sim_vals (computed)")
 
-        print_vals(delta_vals, name="delta_vals")
+        print_vals(self.delta_vals, name="delta_vals")
  
         print('test duration: %.2f min'%(running_time/60.0))
         #print('==================== End Test: %s ====================\n'%self.tag)
@@ -726,3 +740,20 @@ class TestCase:
         os.chdir(workdir)
 
         return
+
+    def postProcess(self):
+        os.system(self.postProcessor)
+        #subprocess.Popen(self.postProcessor, shell=True) 
+        outFile = open(self.postProcessorData, "r")
+        delta_values = []
+        sim_values = []
+        for test_value in self.test_vals:
+            line = outFile.readline()
+            sim_values.append(float(line.strip()))
+            delta_values.append(abs(float(line.strip()) - test_value))
+        outFile.close()
+        if not sim_values:
+            print("empty")
+        else:
+            self.sim_vals = sim_values
+            self.delta_vals = delta_values

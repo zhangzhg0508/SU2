@@ -12444,8 +12444,9 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
     if (fem_solver)
       SortOutputData_FEM(config[iZone], geometry[iZone][iInst][MESH_0]);
     else
+      cout << "Before sortoutputdata" << endl;
       SortOutputData(config[iZone], geometry[iZone][iInst][MESH_0]);
-    
+      cout << "After sortoutputdata" << endl;
     /*--- Write either a binary or ASCII restart file in parallel. ---*/
 
     if (config[iZone]->GetWrt_Binary_Restart()) {
@@ -12726,7 +12727,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
    equations in the current flow problem. ---*/
   
   if (!config->GetLow_MemoryOutput()) {
-    
+    cout << "Allocating memory" << endl;
     /*--- Add the limiters ---*/
     
     if (config->GetWrt_Limiters()) {
@@ -12917,7 +12918,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     /*--- New variables get registered here before the end of the loop. ---*/
     
   }
-  
+  cout << nVar_Par << endl;
   /*--- Auxiliary vectors for variables defined on surfaces only. ---*/
   
   if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
@@ -13164,10 +13165,10 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
 			Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetBodyForceParameters()[8]; iVar++;
 			
 			
-			Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetBodyForceVector_Turbo()[1]; iVar++;
-			Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetBodyForceVector_Turbo()[2]; iVar++;
+			Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetBody_Force_Source()[1]; iVar++;
+			Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetBody_Force_Source()[2]; iVar++;
 			if(geometry->GetnDim() == 3){
-				Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetBodyForceVector_Turbo()[3]; iVar++;
+				Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetBody_Force_Source()[3]; iVar++;
 			}
 		}
         /*--- New variables can be loaded to the Local_Data structure here,
@@ -13182,7 +13183,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       
     }
   }
-  
+  cout << iVar << endl;
   /*--- Free memory for auxiliary vectors. ---*/
   
   if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
@@ -15832,7 +15833,6 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   /*--- Search all send/recv boundaries on this partition for any periodic
    nodes that were part of the original domain. We want to recover these
    for visualization purposes. ---*/
-  
   Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
     Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
@@ -15918,7 +15918,6 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
     nPoint_Flag[ii]= -1;
   }
   nPoint_Send[size] = 0; nPoint_Recv[size] = 0;
-  
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++ ) {
     
     /*--- We only write interior points and recovered periodic points. ---*/
@@ -15949,7 +15948,6 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
       
     }
   }
-  
   /*--- Communicate the number of nodes to be sent/recv'd amongst
    all processors. After this communication, each proc knows how
    many cells it will receive from each other processor. ---*/
@@ -16002,7 +16000,6 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   
   /*--- Loop through our elements and load the elems and their
    additional data that we will send to the other procs. ---*/
-  
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
     /*--- We only write interior points and recovered periodic points. ---*/
@@ -16050,7 +16047,6 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
       }
     }
   }
-  
   /*--- Free memory after loading up the send buffer. ---*/
   
   delete [] index;
@@ -16172,7 +16168,6 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   /*--- Store the connectivity for this rank in the proper data
    structure before post-processing below. First, allocate the
    appropriate amount of memory for this section. ---*/
-  
   Parallel_Data = new su2double*[VARS_PER_POINT];
   for (int jj = 0; jj < VARS_PER_POINT; jj++) {
     Parallel_Data[jj] = new su2double[nPoint_Recv[size]];
@@ -16187,6 +16182,7 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   nParallel_Poin = nPoint_Recv[size];
   
   /*--- Reduce the total number of points we will write in the output files. ---*/
+
 
 #ifndef HAVE_MPI
   nGlobal_Poin_Par = nParallel_Poin;
@@ -16204,17 +16200,14 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   delete [] nPoint_Recv;
   delete [] nPoint_Send;
   delete [] nPoint_Flag;
-  
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
     delete [] Local_Data[iPoint];
   delete [] Local_Data;
-  
   delete [] Local_Halo;
   delete [] npoint_procs;
   delete [] starting_node;
   delete [] ending_node;
   delete [] nPoint_Linear;
-  
 }
 
 void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {

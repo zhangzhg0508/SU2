@@ -2533,3 +2533,11 @@ inline unsigned short CDiscAdjFEASolver::GetnDVFEA(void) { return nDV; }
 inline su2double CDiscAdjFEASolver::GetVal_EField(unsigned short iVal) { return EField[iVal]; }
 
 inline su2double CDiscAdjFEASolver::GetVal_DVFEA(unsigned short iVal) { return DV_Val[iVal]; }
+
+inline void CSolver::PreprocessBFMParams(CGeometry *geometry, CConfig *config, CSolver *fluidSolver) {};
+
+inline  void CSolver::ComputeBodyForce_Source(CConfig *config, CGeometry *geometry, CSolver *fluidsolver) {};
+
+inline  void CSolver::ComputeBlockage_Source(CConfig *config, CGeometry *geometry, CSolver *fluidsolver) {};
+
+inline  void CSolver::ComputeBFMSources(CConfig *config, CGeometry *geometry, CSolver *fluidsolver) {};

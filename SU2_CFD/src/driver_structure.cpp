@@ -1178,7 +1178,8 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
   template_solver, disc_adj, disc_adj_turb, disc_adj_heat,
   fem_dg_flow, fem_dg_shock_persson,
   e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
-  
+  //BFM:
+  bool body_force;
   /*--- Count the number of DOFs per solution point. ---*/
   
   DOFsPerPoint = 0;
@@ -1197,7 +1198,8 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
   template_solver  = false;
   fem_dg_flow      = false;  fem_dg_shock_persson = false;
   e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
-  
+  //BFM:
+  body_force = false;
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
@@ -1226,6 +1228,8 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
     case DISC_ADJ_HEAT: heat_fvm = true; disc_adj_heat = true; break;
   }
+  //BFM:
+  if(config->GetBody_Force()) body_force=true;
   
   /*--- Determine the kind of FEM solver used for the flow. ---*/
 
@@ -1380,6 +1384,13 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
       solver_container[val_iInst][iMGlevel][ADJHEAT_SOL] = new CDiscAdjSolver(geometry[val_iInst][iMGlevel], config, solver_container[val_iInst][iMGlevel][HEAT_SOL], RUNTIME_HEAT_SYS, iMGlevel);
       if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][ADJHEAT_SOL]->GetnVar();
     }
+    //BFM:
+    
+    if (body_force){
+      solver_container[val_iInst][iMGlevel][BFM_SOL] = new CBodyForceModelSolver(geometry[val_iInst][iMGlevel], config, solver_container[val_iInst][iMGlevel][FLOW_SOL], iMGlevel);
+      solver_container[val_iInst][iMGlevel][BFM_SOL]->PreprocessBFMParams(geometry[val_iInst][iMGlevel], config, solver_container[val_iInst][iMGlevel][FLOW_SOL]);
+    }
+    
   }
 
 
@@ -1529,7 +1540,8 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
   heat_fvm, fem, fem_euler, fem_ns, fem_dg_flow,
   template_solver, disc_adj, disc_adj_fem, disc_adj_turb, disc_adj_heat;
   int val_iter = 0;
-
+  //BFM:
+  bool body_force;
   /*--- Initialize some useful booleans ---*/
 
   euler            = false;  ns           = false;  turbulent   = false;
@@ -1540,7 +1552,8 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
   disc_adj_turb    = false;
   heat_fvm         = false;  disc_adj_heat    = false;
   template_solver  = false;
-
+  //BFM: 
+  body_force = false;
   /*--- Check for restarts and use the LoadRestart() routines. ---*/
 
   bool restart      = config->GetRestart();
@@ -1593,7 +1606,8 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
     case DISC_ADJ_HEAT: heat_fvm = true; disc_adj_heat = true; break;
 
   }
-
+  //BFM:
+  if(config->GetBody_Force()) body_force=true;
   /*--- Determine the kind of FEM solver used for the flow. ---*/
 
   switch( config->GetKind_FEM_Flow() ) {
@@ -1621,6 +1635,13 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
     if (heat_fvm) {
       solver_container[val_iInst][MESH_0][HEAT_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
     }
+    // //BFM:
+    
+    // if (body_force){
+    //   solver_container[val_iInst][MESH_0][BFM_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+    // }
+    
+    
   }
 
   if (restart) {
@@ -1673,7 +1694,8 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
   template_solver, disc_adj, disc_adj_turb, disc_adj_fem, disc_adj_heat,
   e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
-
+  //BFM:
+  bool body_force;
   /*--- Initialize some useful booleans ---*/
   
   euler            = false;  ns              = false;  turbulent = false;
@@ -1686,7 +1708,8 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
   transition       = false;
   template_solver  = false;
   e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
-
+  //BFM: 
+  body_force = false;
   /*--- Assign booleans ---*/
   
   switch (config->GetKind_Solver()) {
@@ -1712,7 +1735,8 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
     case DISC_ADJ_HEAT: heat_fvm = true; disc_adj_heat = true; break;
   }
-  
+  //BFM:
+  if(config->GetBody_Force()) body_force = true;
   /*--- Assign turbulence model booleans ---*/
   
   if (turbulent)
@@ -1774,6 +1798,11 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
     }
     if (disc_adj_fem) {
       delete solver_container[val_iInst][iMGlevel][ADJFEA_SOL];
+    }
+    //BFM:
+    
+    if(body_force){
+      delete solver_container[val_iInst][iMGlevel][BFM_SOL];
     }
     
     delete [] solver_container[val_iInst][iMGlevel];

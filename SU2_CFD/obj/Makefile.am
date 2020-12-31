@@ -123,6 +123,7 @@ libSU2Core_sources = \
   ../src/solver_adjoint_elasticity.cpp \
   ../src/solver_direct_heat.cpp \
   ../src/solver_direct_mean.cpp \
+  ../src/solver_bodyforce_mean.cpp \
   ../src/solver_direct_mean_fem.cpp \
   ../src/solver_direct_mean_inc.cpp \
   ../src/solver_direct_transition.cpp \

@@ -763,6 +763,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("BODY_FORCE_BLADES", Body_Force_Blades, 29);
   /*!\brief BODY_FORCE_ROTATION \n DESCRIPTION: Define the angular velocity used in body force calculation \ingroup Config */
   addDoubleOption("BODY_FORCE_ROTATION", Body_Force_Rotation, 0);
+  addEnumOption("BFM_FORMULATION", BFM_Formulation, BFM_map, THOLLET);
   /*!\brief BODY_FORCE_RADIUS \n DESCRIPTION: Define the radius used in body force calculation \ingroup Config */
   addDoubleOption("BODY_FORCE_RADIUS", Body_Force_Radius, 1);
   //addDoubleArrayOption("BODY_FORCE_RADIUS",2, Body_Force_Radius, {0.25, 0.25});

@@ -170,11 +170,15 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     direct_solver->node[iPoint]->SetSolution(node[iPoint]->GetSolution_Direct());
   }
-  if(body_force){
-      cout<<"Set Recoding Test"<<endl;
-      cout<<node[iPoint]->GetBodyForceDirect()[0]<<endl;
-      direct_solver->node[iPoint]->Set_BFSource(node[iPoint]->GetBodyForceDirect());
-  }
+  // if(body_force){
+  //     cout<<"Set Recoding Test"<<endl;
+  //     su2double *BFMParameters_adj = node[iPoint]->GetBodyForceParameters();
+  //     su2double *BFMParameters_direct = direct_solver->node[iPoint]->GetBodyForceParameters();
+  //     cout << BFMParameters_adj[0] << endl;
+  //     cout << BFMParameters_direct[0] << endl;
+  //     direct_solver->node[iPoint]->SetBodyForceParameters(node[iPoint]->GetBodyForceParameters());
+  //     direct_solver->node[iPoint]->SetBody_Force_Source(node[iPoint]->GetBody_Force_Source());
+  // }
 
   if (time_n_needed) {
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -283,7 +287,6 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
   if (body_force) {
 	  
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
-			//cout << direct_solver->node[iPoint]->GetBodyForceParameters()[0] << endl;
 			direct_solver->node[iPoint]->RegisterBFSource(input);
     }
   }
@@ -842,7 +845,7 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
 	  for(iPoint=0; iPoint < nPoint; iPoint++){
 	  //config->TotalGrad_Camb_Norm();
 		Body_Force_Parameters = node[iPoint]->GetBodyForceParameters();
-	for (iDim = 2; iDim < 5; iDim++) {
+	for (iDim = 0; iDim < 9; iDim++) {
 
 		Sensitivity = SU2_TYPE::GetDerivative(Body_Force_Parameters[iDim]);
 		/*--- Set the index manually to zero. ---*/
@@ -851,9 +854,9 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
 
 		/*--- If sharp edge, set the sensitivity to 0 on that region ---*/
 		if (!time_stepping) {
-			node[iPoint]->SetSensitivity(iDim-2, Sensitivity);
+			node[iPoint]->SetSensitivity(iDim, Sensitivity);
 		} else {
-			node[iPoint]->SetSensitivity(iDim-2, node[iPoint]->GetSensitivity(iDim-2) + Sensitivity);
+			node[iPoint]->SetSensitivity(iDim, node[iPoint]->GetSensitivity(iDim) + Sensitivity);
 		}
 	}
 	  

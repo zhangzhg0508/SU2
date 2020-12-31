@@ -51,6 +51,7 @@
 #include <set>
 #include <stdlib.h>
 #include <stdio.h>
+#include <vector>
 
 #include "fluid_model.hpp"
 #include "task_definition.hpp"
@@ -4381,6 +4382,14 @@ public:
   virtual void ComputeBodyForce_Turbo(CConfig *config, CGeometry *geometry);
   
   virtual void ComputeBlockageVector(CConfig *config, CGeometry *geometry);
+
+  virtual void PreprocessBFMParams(CGeometry *geometry, CConfig *config, CSolver *fluidSolver);
+
+  virtual  void ComputeBodyForce_Source(CConfig *config, CGeometry *geometry, CSolver *fluidsolver);
+
+  virtual void ComputeBlockage_Source(CConfig *config, CGeometry *geometry, CSolver *fluidsolver);
+
+  virtual  void ComputeBFMSources(CConfig *config, CGeometry *geometry, CSolver *fluidsolver);
 
 };
 
@@ -15826,6 +15835,67 @@ private:
                                                   su2double &Viscosity,
                                                   su2double &kOverCv,
                                                   su2double *normalFlux);
+ 
+ 
+  
+  
 };
+class CBodyForceModelSolver : public CSolver {
+  protected:
+  unsigned short kind_bfm{0};
+  su2double *unit_vector_axial;
+  su2double *unit_vector_radial;
+  unsigned long iPoint;
+  unsigned short iMesh, iDim;
+  unsigned short nDim;
+  unsigned short n_sec, n_axial, n_rows;
+  vector <vector <vector <su2double>>> rows_axial, rows_radial, rows_Nx, rows_Nt, rows_Nr, 
+  rows_blockage, rows_X_le, rows_axial_chord;
+  vector <int> rows_blade_count;
+  vector <su2double> rows_rotation;
+  su2double Rotation_vector [3];
+  su2double Rotation_rate;
+  su2double x_min=0;
+  su2double **proj_vector_axial, **proj_vector_tangential, **proj_vector_radial;
+  su2double ** relative_vel;
+  su2double **cyl_coordinates;
 
+  void AllocateMemory();
+  su2double vector_dot_product(vector<su2double> v_1, vector<su2double> v_2);
+  
+  void ComputeCylProjections(CGeometry *geometry, CConfig *config, CSolver *solver);
+
+  void ComputeRelVelocity(CGeometry *geometry, CConfig *config, CSolver *solver);
+
+  void SetBFM_Formulation(unsigned short BFM_Formulation){kind_bfm = BFM_Formulation;};
+  
+  public:
+
+  CBodyForceModelSolver(void);
+  
+
+  CBodyForceModelSolver(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned short iMesh);
+  
+ 
+  virtual ~CBodyForceModelSolver(void);
+
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+
+  void PreprocessBFMParams(CGeometry *geometry, CConfig *config, CSolver *fluidSolver);
+
+  void InterpolateGeometry(CGeometry *geometry, CConfig *config, CSolver *fluidSolver);
+
+  void ComputeBlockageGradient(CGeometry *geometry, CConfig *config, CSolver *fluidSolver);
+  
+  void ReadInputFile(CConfig *config, CGeometry *geometry);
+
+  void ComputeBodyForce_Source(CConfig *config, CGeometry *geometry, CSolver *fluidsolver);
+
+  void ComputeBlockage_Source(CConfig *config, CGeometry *geometry, CSolver *fluidsolver);
+
+  void BFM_Thollet(CConfig *config, CGeometry *geometry, CSolver *fluidsolver);
+  void BFM_Hall(CConfig *config, CGeometry *geometry, CSolver *fluidsolver);
+
+  void ComputeBFMSources(CConfig *config, CGeometry *geometry, CSolver *fluidsolver);
+  };
 #include "solver_structure.inl"
